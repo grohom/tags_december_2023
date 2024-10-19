@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width">
+
+<style type="text/css">
+
+/* reset */
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td,
+article, aside, canvas, details, embed, 
+figure, figcaption, footer, header, hgroup, 
+menu, nav, output, ruby, section, summary,
+time, mark, audio, video {
+	margin:0;
+	padding:0;
+	border:0;
+	font-size:100%;
+	font:inherit;
+	vertical-align:baseline;
+}
+
+body {
+	font:16px/1.8 normal helvetica, arial, sans-serif;
+}
+
+h1 {
+	font-weight:bold;
+	color:#444;
+}
+
+.container {
+	width:80%;
+	max-width:1000px;
+	margin:100px auto;
+}
+
+.the-text {
+	font:inherit;
+	font-size:inherit;
+	width:48em;
+	padding:0.2em;
+	line-height:1.2em;  
+	border:0.07em solid darkgrey;
+	border-radius:0.2em;
+}
+
+.edit-panel {
+	padding:0.2em;
+	width:48em;
+	line-height:2;  
+	border:0.07em solid darkgrey;
+	border-radius:0.2em;
+}
+
+.suggest-panel {
+	display:inline-block;
+	width:48em;
+	padding:0.2em;
+	padding-bottom:2em;
+	line-height:3;
+	background:#E2E2E2;
+	visibility:hidden;
+}
+
+.tag {
+	display:inline-block;
+	position:relative;
+	text-wrap:nowrap;
+	background:#ffd8a8;
+	padding:0 0.65em 0 0.75em;
+	border-radius:1em;
+	margin-right:0.15em;
+	margin-left:0.15em;
+	line-height:1.6;
+}
+.tag > div {
+	display:inline-block;
+	cursor:default;
+}
+.tag div::selection {
+	background:#ffd8a8;
+}
+.tag:hover,
+.tag:hover .label::selection {
+	background:#FFBB68;
+}
+.tag.selected,
+.tag.selected div::selection
+{
+	background:Highlight;
+}
+
+.tag .label {
+	text-wrap:nowrap;
+	margin-right:5px;
+}
+
+.tag .description {
+	position:absolute;
+	max-width:16em;
+	font-size:75%;
+	padding:0.5em;
+	background:#C8FFFE;
+	border-radius:1em;
+	left:0;
+	bottom:3em;
+	line-height:1.2;
+	text-wrap:wrap;
+	visibility:hidden;
+}
+
+.tag .long-description {
+	position:absolute;
+	font-size:75%;
+	padding-left:0.7em;
+	left:0;
+	top:2.3em;
+	line-height:1.1;
+	text-wrap:wrap;
+	visibility:visible;
+}
+
+.tag .close {
+	visibility:hidden;
+	font-size:0.7em;
+	cursor:default;
+	position:absolute;
+	right:0;
+	top:0;
+	line-height:2.5em;
+	width:2em;
+	text-align:center;
+}
+
+.tag .hits {
+	color:#666;
+	font-size:.75em;
+	cursor:default;
+}
+.tag:hover .hits {
+	visibility:hidden;
+}
+
+.tag:hover .description,
+.tag:hover .close {
+	visibility:visible;
+}
+
+.description:after {
+	content:"";
+	position:absolute;
+	bottom:-0.8em;
+	left:0.2em;
+	width:0;
+	border-top:1.2em solid #C8FFFE;
+	border-left:0.8em solid transparent;
+	border-right:0.8em solid transparent;
+}
+
+</style>
+
+</head>
+
+<body>
+<div class="container">
+	<h1>Enter text about some countries</h1>
+	<textarea class="the-text" id="the_text" rows=3>Vecinii Chinei sunt Mongolia, Rusia, Kazahstan, Pakistan, Afganistan, Tadjikistan, Kîrgîzstan, Bhutan, Nepal, India, Myanmar, Vietnam, Laos și Coreea de Nord.</textarea>
+	<p><button id="suggest_button">Extract tags from text</button> and/or type your own tags</p>
+	<div class="edit-panel" id="edit_panel" contenteditable="true"></div>
+	<div class="suggest-panel" id="suggest_panel"></div>
+</div>
+
+<script type="text/javascript">
+
+class Tag {
+	constructor(id, label, hits, ngrams) {
+		this.id = id;
+		this.label = label;
+		this.hits = hits; // popularity (ca să fie mai scurt)
+		this.description = label;
+		this.ngrams = new Set(ngrams);
+	}
+
+	create_div() {
+		const tag = document.createElement('div');
+		tag.classList.add('tag');
+		tag.contentEditable = false;
+		tag.innerHTML = '<div class="label">' + this.label + '</div><div class="hits">' + this.hits + '</div>';
+		tag.the_tag = this; // ca să știm dup-aia să trimitem la server id-urile
+		return tag;
+	}
+
+	create_div_for_edit() {
+		const tag = this.create_div();
+		const description = document.createElement('div');
+		description.innerHTML = this.description;
+		description.classList.add('description');
+		tag.appendChild(description);
+		const close = document.createElement('div');
+		close.innerHTML = '✕';
+		close.classList.add('close');
+		close.addEventListener('click', this.remove_from_edit.bind(tag));
+		tag.appendChild(close);
+		return tag;
+	}
+
+	show_in_edit() {
+		const tag = this.create_div_for_edit();
+		edit_panel.appendChild(tag);
+	}
+
+	place_in_edit(position) {
+		const tag = this.create_div_for_edit();
+		edit_panel.insertBefore(tag, position);
+	}
+
+	show_in_suggest() {
+		const tag = this.create_div();
+		const long_description = document.createElement('div');
+		long_description.innerHTML = this.description;
+		long_description.classList.add('long-description');
+		tag.appendChild(long_description);
+		tag.addEventListener('click', this.move_to_edit.bind(tag));
+		suggest_panel.appendChild(tag);
+	}
+
+	remove_from_edit() {
+		this.remove();
+		if (edit_panel.textContent == "" || edit_panel.lastChild.nodeName !== "#text") {
+			suggest_panel.style.visibility = "hidden";
+		}
+		cursor_to_end();
+	}
+
+	move_to_edit() {
+		const tag = this.the_tag;
+		edit_panel.lastChild.textContent = "";
+		this.remove();
+		const position = Array.from(edit_panel.children).find(t => t.the_tag.hits < tag.hits);
+		tag.place_in_edit(position);
+		live_suggestions();
+		cursor_to_end();
+		if (suggest_panel.childElementCount == 0) {
+			suggest_panel.style.visibility = "hidden";
+		}
+	}
+
+}
+
+const the_text = document.getElementById("the_text");
+const suggest_button = document.getElementById("suggest_button");
+const edit_panel = document.getElementById("edit_panel");
+const suggest_panel = document.getElementById("suggest_panel");
+
+// Lista tuturor tagurilor (vine de la server).
+// Un tag vine ca un Array [id, label, hits, ngrams].
+const tags_json = [
+[0,"Maldives",18,["ma"," m","ldi","ld","al","mal","a","e","ive","l","di","ve","s","i","d","ald","v"," ma","es","m","ves","div","iv"]],
+[1,"Nepal",31,["al","nep","ne","epa","a","e","l","ep"," ne","n","pa","pal"," n","p"]],
+[2,"Italy",33,["al","a","ly"," it","l","y","ta","tal","ita","aly","t","i"," i","it"]],
+[3,"Cape Verde",19,["r","pe","cap","a","e","ve","d","v","ap","ape"," c","erd","rde","e v","rd","ca","e ","ver","pe ","er"," ca"," v","c","de"," ve","p"]],
+[4,"Pakistan",37,["pak","is","sta","kis","aki","pa","k","ak","a","s","i","st"," pa"," p","t","ki","n","an","ist","ta","tan","p"]],
+[5,"Mongolia",25,["ol","li","mon"," m","gol","lia","ngo","a","o","l","on","i","ng","oli","m","ia","mo"," mo","ong","go","n","g"]],
+[6,"Democratic Republic of the Congo",34,[" d","he ","cra","dem","th"," re"," r","lic","e","o","l","ep","pub","rep"," c","ra","the"," t","emo","ubl","ti","ub","moc","go","at","g"," de"," o","ic ","a","b","f ","of","bl","ng","c ","t","pu","c o","e ","ati","n","r","ocr","co","ngo","ic","on","i","u","he","ong","oc","h"," th","of ","p","rat","li","epu","cr","d"," of","con","f t","em"," co","e c","m","f","mo","c r","tic","bli","c","de","re"]],
+[7,"Honduras",28,["r","ura","ho","hon","du","a","ras","o","as","on","s","d","u","ur"," h"," ho","ra","nd","ndu","dur","h","n","ond"]],
+[8,"Switzerland",27,["r","la","itz","lan","it","wi","a","e"," s","l","s","i","d","swi","ze","tze"," sw","w","sw","and","rla","nd","zer","t","wit","erl","er","z","n","rl","tz","an"]],
+[9,"São Tomé and Príncipe",17,["d ","r","in","ri","sao","inc"," to","om","ome","pe","o t"," a","ao ","nci","a","e","o"," s","to","nc"," sa","e a","rin","s","i","d","o ","ip","pri"," p"," an","me"," pr","and","m","cip","sa"," t","ci","d p","nd","nd ","t","pr","e ","tom","ipe","ao","me ","n","c","an","p"]],
+[10,"Finland",26,["la","in","nla","nl","fin","lan"," fi","inl","a","l","i","d","and","f"," f","nd","fi","n","an"]],
+[11,"Bulgaria",26,[" bu","r","ria","ri","gar","b","a","ul","l","bul","i","lga","u","lg","bu","ia","ulg","ari"," b","ga","ar","g"]],
+[12,"Benin",28,[" b","b","e","nin"," be","in","eni","n","i","en","ni","ben","be"]],
+[13,"Saudi Arabia",31,["r","ud","i ","bi"," a","a","b"," s"," sa","aud","abi","di","s","i","d","u","di ","ab","sau"," ar","ra","sa","ia","au","i a","rab","bia","ara","udi","ar"]],
+[14,"Qatar",24,["qat","tar","r","a","at","ata","qa"," qa","t"," q","ar","q","ta"]],
+[15,"Sierra Leone",27,["r","eon","a l"," l"," le"," si","one","ra ","a","e","o","l"," s","le","on","s","i","eo","ie","leo","ier","ra","rr","rra","a ","err","sie","er","si","n","ne"]],
+[16,"Ukraine",32,["r","in","kra","kr"," uk","k","ain","rai","a","e","ai","ine","i","u","uk","ra"," u","n","ne","ukr"]],
+[17,"Uganda",32,["a"," ug","and","ug"," u","nda","n","nd","ga","an","da","u","d","uga","gan","g"]],
+[18,"Costa Rica",26,["r","sta","ri"," r","co","ta ","ric","ost","a","ic","o"," ri","s","i","st"," co"," c","os","a r","ica","t","a ","ca","c","ta","cos"]],
+[19,"El Salvador",27,["dor","lv","r","ado","va","el","sal","al","a","e","o","l"," s"," sa","s"," e","lva","d","v","do","sa"," el","alv","el ","ad","l s","vad","l ","or"]],
+[20,"Tonga",14,["ng","a","o","ton","to"," t","on","nga","n","ga","t"," to","ong","g"]],
+[21,"Haiti",28,["h","a","ha","iti","hai","ai","ait","ti","t","i"," ha"," h","it"]],
+[22,"Peru",31,[" p","r","e","ru"," pe","er","u","eru","pe","per","p"]],
+[23,"Suriname",20,["r","in","ame","ri","a","e"," s","uri","rin","s","i","u"," su","nam","ur","me","m","na","su","ina","am","sur","n"]],
+[24,"Micronesia",15,["r"," m","mic","sia","one","cro","a","e","o","ic","on","s","icr","i","cr","nes","ro","es","m","ia","ron","mi","si","n","c"," mi","ne","esi"]],
+[25,"Antigua and Barbuda",14,["d "," ba","r","rb","bar","gua","ua ","d b","ud","gu","nti","a a"," a","a","b","igu","ba","ua","ig","i","da","u","d","arb","rbu"," an","bu","and","nd","ti","t","nd ","a "," b","uda","tig","n","bud","nt","an","ar","ant","g"]],
+[26,"Palau",9,[" p","al","a","ala","l","la","au","pa","u","pal"," pa","lau","p"]],
+[27,"Gabon",23,["bon","abo","a","b","o","bo","on","n"," ga"," g","ga","gab","ab","g"]],
+[28,"Equatorial Guinea",22,["ne","r","in","ria","ri","gu","tor","ea","uin","al"," gu","ial","a","e","o","l","to","eq","ato","ua","ine"," e"," g","i","u","equ","ui","uat","qua","ia","gui","t","nea","at","l g","ori"," eq","al ","n","q","l ","qu","or","g"]],
+[29,"Kiribati",15,["r","ri","ir","k","b","a","kir","i","bat","iba","ti","t","ki"," ki","iri","rib","at","ib"," k","ati","ba"]],
+[30,"Liberia",26,["li","r","ber","ibe","ria","ri"," l"," li","b","e","a","l","i","ia","eri","er","ib","lib","be"]],
+[31,"Syria",30,["r","a"," s","y","sy","ia","ria","s","ri"," sy","yr","i","syr","yri"]],
+[32,"Tajikistan",28,["ji","is","sta","kis","aji","k","taj","a","j","ik","s","aj","i","st"," ta"," t","t","ki","jik","n","an","iki","ist","ta","tan"]],
+[33,"Brazil",36,[" b","r","b","a","l","ra","az","br","zi","azi","z","zil","il","bra","i"," br","raz"]],
+[34,"Philippines",35,["li","in"," ph","hil","hi","e","l","ili","s","ine","ipp","i","ppi","ip","nes","ph"," p","lip","es","pin","pp","pi","phi","h","n","il","ne","p"]],
+[35,"Cuba",28,["b","a"," c","cu"," cu","c","uba","u","ub","cub","ba"]],
+[36,"Kenya",32,["a","e","y","ny","eny"," k","ke","n","ya","en"," ke","k","ken","nya"]],
+[37,"Samoa",17,["a"," s","o","m"," sa","moa","sa","sam","s","mo","oa","amo","am"]],
+[38,"Bahamas",18,[" ba","ma","b","a","as","s","aha","ham","ha","bah","m","mas","am","h"," b","ama","ah","ba"]],
+[39,"Ireland",26,["r","ire","la","ir","el"," i","lan","rel","a","e","l","i","d","ela","and","nd","n","an"," ir","re"]],
+[40,"Turkmenistan",27,["r","men","is","sta","k","a","e","urk","tan","s","i","st","u","tur","ur","tu","me","m"," t","km","t","rk","ni"," tu","nis","rkm","eni","n","en","an","ist","ta","kme"]],
+[41,"Chile",30,["h","e"," c","l","le","ch","il","c","i","hil","hi","ile","chi"," ch"]],
+[42,"Trinidad and Tobago",22,["tob","d ","r","ago","in"," tr","d t","ri"," to","d a","tr"," a","ob","a","b","o","rin","to","ba","ini","i","da","d","tri","id","ag"," an","and"," t","dad","ad ","nd","nd ","t","bag","ni","go","ad","oba","ida","n","an","nid","g"]],
+[43,"Poland",31,[" p","ol","a","o","l","la","and","n","nd","pol","an","d"," po","lan","ola","po","p"]],
+[44,"Jamaica",24,["ma","a","ic","j","ai","i","jam"," j","m","aic","ja","ica","mai","ca","am","ama","c"," ja"]],
+[45,"Vanuatu",18,["nua","va","a","ua","u","tu","v","atu","uat","van","t","anu","nu","at"," va"," v","n","an"]],
+[46,"Latvia",23,["tv","a","at","lat","l","la","via","ia","atv","t","i"," l","vi"," la","tvi","v"]],
+[47,"Estonia",22,["sto","a","e","o","to","on","s"," e","i","st","est"," es","es","ton","ia","t","ni","nia","oni","n"]],
+[48,"Saint Kitts and Nevis",12,["d ","sai","s a","tts","in","is","ev","kit","k","it","ain","itt"," a","a","e"," s"," sa","ai","s","nt ","t ","evi","ts ","i","int","d"," n","v"," an","and","sa","t k","nd","nd ","t","ki"," ki","vi","nev"," ne","ts"," k","n","nt","s ","an","d n","vis","ne","tt"]],
+[49,"North Korea",30,["r"," no"," ko","ore","rea","rth","th","k","ea","h k","a","e","o","h ","nor"," n","th ","rt","no","t","ko","ort","h"," k","n","kor","re","or"]],
+[50,"Mexico",35,["mex","me","e","o","m"," m","ic"," me","ico","xi","x","i","c","exi","ex","xic","co"]],
+[51,"Angola",31,["ngo"," a","ng","a","go","o","l","ol","la"," an","ang","n","an","ola","gol","g"]],
+[52,"Croatia",25,["r","oa"," cr","roa","cro","a","o","i","cr","ro"," c","ia","ti","t","tia","oat","at","ati","c"]],
+[53,"Namibia",24,[" na","bi","a","b","i","nam","mib"," n","m","na","ia","ibi","am","mi","bia","ami","ib","n"]],
+[54,"Dominica",13,[" d","in","nic","om","a","ic","o","ini","dom","i","d","m","do","min","ica","ni","ca","mi"," do","omi","n","c"]],
+[55,"Macedonia",23,["ma"," m","ce","ed","ace","ced","ac","don","a","e","o","on","i","d"," ma","m","do","ia","ni","nia","mac","edo","oni","n","c"]],
+[56,"Côte d'Ivoire",31,["r"," d","oi","ire","oir","ir","ote","'iv","co","e","o","d'","e d","vo","i","d","v","voi"," co","cot"," c","d'i"," d'","t","'","te ","'i","e ","te","ot","c","ivo","iv","re"]],
+[57,"Germany",34,["r","ma","ny"," ge","a","e","any"," g","man","m","rma","rm","ge","ger","y","er","erm","n","an","g"]],
+[58,"Serbia",26,["bia","b","r","e","a"," s","er","rb","ia","rbi","erb","s"," se","se","i","ser","bi"]],
+[59,"Slovenia",23,["ove","lo","lov","sl","a","e","o","l"," s","slo","ve","s","i","ov","ven","v","ia","ni","nia"," sl","eni","n","en"]],
+[60,"South Korea",32,["r","ut","uth"," ko","ore","ou","rea","th","k","ea","h k","a","e","o"," s","so","h ","s","u","th ","sou"," so","t","ko","h","out"," k","kor","re","or"]],
+[61,"Burundi",28,[" bu","r","run","und","ndi","ru","b","di","i","u","d","ur","bu","nd","uru"," b","bur","un","n"]],
+[62,"Libya",27,["b","a","li","l","y","bya","ib","lib","by","ya","i","iby"," l"," li"]],
+[63,"Sri Lanka",30,["r","la","i l","ri","k"," l","lan","i ","sri","a"," s","l","s","ka","i","sr","ri ","ank","nka","n","an"," la","nk"," sr"]],
+[64,"Thailand",33,["la","th","lan","tha","a","l","hai","ai","i","d","ha","ila","and"," t","nd","t","h","ail","n","il"," th","an"]],
+[65,"Slovakia",26,["aki","lo","va","k","ak","lov","sl","kia","a"," s","o","l","slo","s","i","ova","ov","vak","v","ia","ki"," sl"]],
+[66,"Iraq",32,["aq"," i","r","a","raq","ra","ira","ir","i"," ir","q"]],
+[67,"Senegal",29,["sen","al","ene","a","e"," s","l","s","eg","ega"," se","se","gal","n","ga","en","ne","g","neg"]],
+[68,"Israel",28,["sra","a","r","e","l","ra","is","ae"," is","rae","ael","s","i","isr","el"," i","sr"]],
+[69,"Nicaragua",26,["r","gua","gu","nic","agu","a","ic","rag","ua","i","u"," ni"," n","ag","ra","ica","ni","ca","car","ara","n","c","ar","g"]],
+[70,"Liechtenstein",12,["li","ein","in","ste"," l"," li","ht","e","l","s","i","st","lie","ie","tei","ech","ten","ch","ec","cht","t","nst","te","h","iec","ens","n","ei","c","en","ns","hte"]],
+[71,"Portugal",28,["r"," po","po","al","a","o","l","rtu","u","tu","rt"," p","t","uga","por","ort","tug","ug","gal","ga","or","g","p"]],
+[72,"Belgium",28,["elg","el","b","e","l","ium","i","u","lg","bel","m","um","iu","lgi","giu"," b"," be","gi","g","be"]],
+[73,"Bahrain",22,[" ba","r","in","ain","ahr","rai","b","a","hr","ai","i","hra","bah","ra","h"," b","ah","n","ba"]],
+[74,"United Arab Emirates",27,["ted","rat","d ","r","ed ","ed","ir","it","d a"," a","b e","a","e","b","b ","emi","s"," e","ira","i","ate","u","d","em","ab","tes"," ar","es","nit"," em","m","ra","t","ni","te","uni","mi","at","rab","ara","un"," u","n","mir","ite","ab ","ar"," un"]],
+[75,"Iceland",18,["la","ce","el"," i","lan","a","e","ic","l","i","d","cel","ela","and","nd"," ic","n","c","an","ice"]],
+[76,"Chad",29,["h","a","ha"," c","ad","cha","ch","c","d","had"," ch"]],
+[77,"Mali",30,["al","mal"," ma","a","li","ma","m","l"," m","ali","i"]],
+[78,"Uzbekistan",31,["eki","zbe","is","sta","kis","zb","k","b","e","a"," uz","s","bek","i","st","u","uzb","t","uz","ki","z"," u","n","an","ist","ta","tan","ek","be"]],
+[79,"Venezuela",31,["ez","la","nez","el","ezu","ene","a","e","uel","l","zue","ve","u","ven","v","ela","zu","ue","z"," v","n","en","ne"," ve"]],
+[80,"Grenada",15,["r","a","e"," g","da","d","gr","ren","gre","na","nad","ena","ad"," gr","n","en","ada","re","g"]],
+[81,"Tunisia",28,["is","tun","sia","a","s","i","u","tu"," t","ia","t","uni","ni"," tu","nis","isi","si","un","n"]],
+[82,"Saint Lucia",16,["sai","in","luc"," l","uc","ain","uci","cia","a"," s"," sa","l","ai"," lu","s","nt ","t ","i","int","u","t l","sa","ci","ia","t","lu","n","nt","c"]],
+[83,"Jordan",28,["rda"," jo","r","a","o","j","or","rd","jo","n","an","da","d","jor","dan"," j","ord"]],
+[84,"Australia",30,["li","r","ral","us","lia","tr","al"," a","a","l","s"," au","i","st","u","aus","ust","ra","ia","au","t","tra","ali","str"]],
+[85,"The Gambia",24,["mb","he ","e g","th","gam","bi","amb","a","e","b","mbi"," g","i","he","m","the"," t","ia","t","am","e ","h","bia"," ga","ga"," th","g"]],
+[86,"Malawi",30,["al","wi"," ma","mal","a","aw","ma","m","l","w"," m","la","ala","awi","law","i"]],
+[87,"South Africa",33,["r","ut","uth","h a","ou","ri","th"," af","fri","ric"," a","a"," s","o","ic","so","afr","h ","s","i","u","th ","sou"," so","f","fr","ica","t","af","ca","h","out","c"]],
+[88,"Mozambique",31,[" m","za","mb","iqu","bi","moz","biq","que","amb","a","b","o","e","mbi","oz","i","u","zam","m","mo"," mo","am","iq","ue","oza","z","q","qu"]],
+[89,"Central African Republic",26,["li","r","ral","ce","ri","ntr"," af"," re"," r","tr","al"," a","fri","ric","a","e","b","l","ic","ep","afr","can","epu","bl","pub"," ce","i","l a","u","rep","lic","an ","cen"," c","ra","f","fr","ica","ubl","t","af","ub","pu","ca","n r","tra","bli","ent","al ","n","nt","c","en","an","n ","l ","re","p"]],
+[90,"Ecuador",29,["dor","r","or","ado"," ec","a","e","o","ecu","ua","uad"," e","u","d","do","ec","cu","ad","c","cua"]],
+[91,"Argentina",32,["r","in","gen","nti"," a","a","e","arg","i"," ar","na","rg","t","ge","ti","ina","tin","ent","n","nt","en","rge","ar","g"]],
+[92,"Papua New Guinea",28,["pap","a n","pua","in","ua ","pa","gu","new","ea","uin"," gu","a","e","ew ","ua","ine","apu"," g","i","u","w g"," pa"," n","ui"," p","ap","w","gui","a ","pu","nea"," ne","ew","n","w ","ne","g","p"]],
+[93,"Oman",26,["a","o","m","ma","oma"," om","n","an","om","man"," o"]],
+[94,"Mauritania",25,["r","ma"," m","ri","ita","it","a","uri","mau","i","u","ur"," ma","m","ia","au","t","ni","nia","ani","n","rit","an","ta","tan","aur"]],
+[95,"Cambodia",29,["mb","bod","odi","dia","amb","a","b","o","cam","di","od","i","d","mbo"," c","m","bo","ia","am","ca"," ca","c"]],
+[96,"Greece",28,["gre","r","e","ce","ee","ec"," gr","ree","ece"," g","c","gr","eec","re","g"]],
+[97,"Guyana",20,[" gu","yan","ana","a","y","na","uya","n"," g","ya","uy","u","gu","an","guy","g"]],
+[98,"Singapore",26,["r","in","ore","nga"," si","po","a","e","o"," s","s","i","sin","gap","ng","ap","ing","por","apo","si","n","ga","re","or","g","p"]],
+[99,"Mauritius",22,["r","ma"," m","tiu","ri","us","it","a","uri","mau","s","i","u","ur"," ma","m","iti","au","ius","ti","t","iu","rit","aur"]],
+[100,"Guatemala",29,["ma","la","gua","gu","tem","al"," gu","mal","a","e","l","ua","ema"," g","ate","u","em","uat","m","t","te","at","ala","g"]],
+[101,"India",42,["a"," in","dia","in","di","ia","ind","n","nd","i","d"," i","ndi"]],
+[102,"Togo",27,["go","o","to","og"," t","tog","t"," to","g","ogo"]],
+[103,"Ethiopia",34,["hio","op","et","th","hi","thi","a","e","o"," e","i","eth","iop","ia","t","opi","pia","pi","h"," et","io","p"]],
+[104,"Marshall Islands",12,["sh","isl","r","nds","ma"," m","la","is"," i","lan","sl","all","al","rs","a","rsh","sha","l","s","i","d","ds","sla"," ma","ha","and","m"," is","nd","l i","h","ars","mar","n","ll","ll ","an","hal","ar","l "]],
+[105,"Denmark",26,["r"," d","ma"," de","ark","k","nma","a","e","d","m","rk","den","enm","nm","n","de","en","ar","mar"]],
+[106,"San Marino",11,["r","ma"," m","in","ri","ino","n m","a"," s","o"," sa","rin","s","i","an "," ma","san","m","no","sa","ari","n","an","n ","ar","mar"]],
+[107,"Botswana",24,["ots","swa","b","a","o","bot","s","wan","tsw","wa","na","w","bo","sw","t"," b","ts","ot","n"," bo","an","ana"]],
+[108,"Saint Vincent and the Grenadines",15,["d ","r","sai","he ","ce","in","vin","d t","inc","e g","th"," vi","ain"," a","a","e"," s","nc"," sa","ai","di","s","nt ","t ","ine"," g","i","int","d","gr","nce","adi","nes","ren","gre","v","he"," an","cen","es","and","na","the","sa"," t","din","nd","nd ","t","nad","vi","t a","e ","h","t v","ena","ad","ent"," v"," gr","n","nt","c","en","an"," th","ne","re","g"]],
+[109,"Afghanistan",31,["is","sta"," af"," a","gh","a","s","i","st","han","ha","afg","f","t","af","gha","ni","h","nis","fg","ani","n","an","ist","ta","tan","g","fgh"]],
+[110,"Indonesia",37,["ndo","in"," i","sia","one","don","a","e","o","on","s","i","d","nes","es","do","ind","ia","nd"," in","si","n","ne","esi"]],
+[111,"Tanzania",33,["za","zan","a","anz","i","nz"," ta"," t","ia","t","ni","nia","ani","z","n","an","nza","ta","tan"]],
+[112,"Nauru",8,["r","a","ru","nau","na","au","n"," na","uru","u","ur"," n","aur"]],
+[113,"Laos",27,["aos","a","o","l","la","lao","ao","os","s"," l"," la"]],
+[114,"United States of America",38,["ted","d ","r","ed ","ed","sta","ame","ri","it","f a"," o","d s","ric"," a","a","e","o"," s","f ","ic","s o","of","s","i","st","u","d","ate","es "," of","tes","me","es","nit"," am","m","f","ica","t","eri","tat","ni","te","am","ca","uni","at","er","un"," u","n","c","s ","ite"," un","of ","mer","ta"," st"]],
+[115,"Panama",25,[" p","a","ama","ma","m","na","n","an","pa","nam"," pa","ana","pan","am","p"]],
+[116,"Kuwait",25,["wa","a","w","ai","ait","kuw"," k","uwa"," ku","i","t","u","k","ku","wai","it","uw"]],
+[117,"Bolivia",28,["ol","li","via","b","a","o","l","i","v","oli","bo","ia","bol","vi"," b","liv"," bo","ivi","iv"]],
+[118,"Japan",35,["ap","apa","a","j","ja","jap","n","an","pa"," ja","pan"," j","p"]],
+[119,"Kazakhstan",30,["akh","za","sta","kh","k","zak","ak","a"," ka","s","ka","st","hs","aza","khs","t","kaz","h","az","hst","z"," k","n","an","ta","tan"]],
+[120,"Barbados",17,[" ba","r","rb","bar","rba","bad","ado","dos","b","a","o","s","arb","d","do","os"," b","ad","ar","ba"]],
+[121,"Brunei",19,[" b","r","b","e","ru","run","nei","br","un","n","ei","une","i","u","ne"," br","bru"]],
+[122,"Madagascar",30,["r","ma"," m","asc","sca","a","sc","as","s","da","d","ag"," ma","m","mad","ca","gas","ad","car","ga","c","ar","ada","aga","g","dag"]],
+[123,"Burma",32,[" b","bu","r","b","a","m","ma"," bu","bur","urm","rma","rm","u","ur"]],
+[124,"Guinea",28,[" gu","uin","a","e","in","ea","ine","gui","n"," g","i","nea","u","gu","ne","ui","g"]],
+[125,"Romania",29,["r"," ro","ma","rom","om"," r","a","o","i","man","ro","m","ia","ni","nia","oma","ani","n","an"]],
+[126,"Azerbaijan",28,["r","rb","rba","aze","jan","aij","ij","ija"," a","a","e","b","j","ai","i","ze","ja","erb","zer","bai","az","er","z","n","an","ba"," az"]],
+[127,"Austria",27,["r","ria","ri","us","tr"," a","a","s"," au","i","st","u","tri","aus","ust","ia","au","t","str"]],
+[128,"Lesotho",23,["ho","les","th"," l"," le","e","o","l","le","so","eso","s","es","oth","tho","t","h","ot","sot"]],
+[129,"Bosnia and Herzegovina",24,["d ","ego","r","in","vin"," he","rze","a a"," a","her","erz","b","a","o","e","sni","zeg","s","i","eg","d","ov","bos"," h","v","he"," an","ia ","ze","and","na","bo","os","ia","gov","nd","nd ","a ","vi","osn","ina","ni","h"," b","sn","go","nia","rz","er","ovi","d h","z","n"," bo","an","g"]],
+[130,"China",42,["h","a"," c","ina","na","in","ch","n","c","i","hi","hin","chi"," ch"]],
+[131,"Canada",32,["a","can"," c","ad","na"," ca","n","c","an","d","da","nad","ana","ada","ca"]],
+[132,"Malta",19,["al","mal"," ma","a","ma","m","l"," m","t","lta","lt","ta","alt"]],
+[133,"Belarus",27,["r","la","us","aru","el","ru","b","e","a","l","s","lar","u","ela","bel"," b"," be","rus","ar","be"]],
+[134,"Turkey",34,["rk","ey"," tu","r","e","urk","y","rke"," t","ke","key","t","u","k","tur","ur","tu"]],
+[135,"Vatican City",1,["vat","va","it","can","a","ic","ty","i","an ","v"," c","ci","ity","ica","ti","t"," ci","ca","at"," va","tic","y"," v","ati","n","n c","c","an","n ","cit"]],
+[136,"Fiji",21,["ji","j","f"," f","i","fij","ij"," fi","fi","iji"]],
+[137,"Paraguay",26,["r","gua","pa","gu","agu","uay","a","rag","ua","u"," pa"," p","ag","ra","par","ay","y","ara","ar","g","p"]],
+[138,"Uruguay",25,["r","gua","gu","uay","ru","a","ua","u","ur"," ur","ay","uru","ugu","y","ug"," u","rug","g"]],
+[139,"East Timor",22,["r","st ","ea","a","e","o","as","s"," e","t ","i","st","t t","mor","m"," t","eas","tim","mo","ti","t","im"," ti"," ea","imo","ast","or"]],
+[140,"France",33,["anc","r","a","e","nc","ra","ce","fra","f","fr"," fr","n"," f","c","an","nce","ran"]],
+[141,"Netherlands",29,["r","nds","la","et","th","lan","her","a","e","l","s","d","ds"," n","eth","he","and","the","net","rla","nd","t"," ne","h","erl","er","n","rl","an","ne"]],
+[142,"Nigeria",36,["nig","r","ria","ri","a","e","ig","i"," ni"," n","ia","ge","eri","ni","ger","er","ige","n","g"]],
+[143,"Comoros",20,["r","om","co","o","oro","s"," co","ro","mor"," c","m","os","mo","com","ros","omo","c","or"]],
+[144,"Luxembourg",20,["r","mb","ou"," l","emb","uxe","b","e","o","l"," lu","bou","u","ur","em","mbo","lux","m","bo","rg","lu","urg","ux","xe","x","xem","our","g"]],
+[145,"Sweden",28,[" s","e","we","ed"," sw","w","sw","s","swe","n","de","en","d","ede","den","wed"]],
+[146,"Somalia",29,["li","ma","som","om","lia","al","mal","a"," s","o","l","so","s","i"," so","m","ia","ali","oma"]],
+[147,"Solomon Islands",20,["ol","isl","mon","sol","la","nds","is","lo"," i","om","sl","olo","lan","a"," s","o","l","so","on","s","lom","i","d","ds","sla","n i"," so","and","m"," is","mo","nd","on ","omo","n","an","n "]],
+[148,"Hungary",28,["r","hu","nga","gar","a","u","ung"," h","ng","ary","hun"," hu","h","y","ry","un","n","ga","ar","g"]],
+[149,"Norway",26,["wa","r","a","o","y","no","w"," no","rw","rwa","orw","n","nor","ay","way"," n","or"]],
+[150,"Zimbabwe",29,["mb"," zi","b","a","e","i","bwe","imb","abw","ab","bw","m","w","zi","zim","im"," z","bab","we","mba","z","ba"]],
+[151,"Malaysia",31,["ays","ma"," m","la","sia","al","mal","a","l","s","lay","i"," ma","m","ysi","ia","ay","ala","y","si","ys"]],
+[152,"Republic of the Congo",26,["li","r","he ","th"," re"," r"," o","co","lic","ic ","ngo","b","e","o","l","ep","ic","f ","epu","of","bl","on","pub","i","rep","u"," of","con","f t","he","ng"," co","e c"," c","the","f"," t","c ","ubl","t","ong","ub","pu","c o","e ","h","go","bli","n"," th","c","of ","re","g","p"]],
+[153,"Zambia",30,["zam","a","b","amb","m","za","mb","mbi","ia","bia","z","i"," z","bi","am"," za"]],
+[154,"Moldova",24,["ol","ldo"," m","va","ld","dov","a","o","l","ova","d","ov","v","m","do","mo"," mo","old","mol"]],
+[155,"Eritrea",25,["tre","r","itr","rea","ri","ea","it","tr","a","e"," e","i","t","eri","er","rit","re"," er"]],
+[156,"Seychelles",14,["sey","les","el","yc","ych"," s","e","le","l","s","he","ey","es","eyc","ell","ch"," se","se","h","y","lle","ll","c","hel","che"]],
+[157,"Guinea-Bissau",23,["iss","in","is","-b","gu","bi","ea","uin"," gu","a-","a","e","b","-bi","s","ine"," g","i","bis","u","ssa","-","ui","ea-","sau","sa","au","gui","nea","a-b","ss","n","ne","g"]],
+[158,"Spain",32,["a"," s","spa","in","ai","sp","pai","s"," sp","n","i","pa","ain","p"]],
+[159,"Egypt",34,["gy","egy","e","y"," e","t","eg","yp","ypt"," eg","gyp","pt","g","p"]],
+[160,"Lebanon",26,["ban","ano"," l"," le","non","b","e","a","l","o","le","ba","on","no","leb","eb","n","an","eba"]],
+[161,"Iran",34,["r","a","ra","ira","n","ir","i","an"," ir"," i","ran"]],
+[162,"Niger",30,["ger","nig","r","e","er","ige","ig","n","ge","i"," ni"," n","ni","g"]],
+[163,"Tuvalu",8,["al"," tu","tuv","a","alu","l","uv","val"," t","uva","t","va","u","tu","lu","v"]],
+[164,"Kyrgyzstan",27,[" ky","yzs","r","gyz","sta","k","zst","a","zs","s","st","rgy","yr","t","rg","ky","yrg","kyr","gy","y","z"," k","n","yz","an","ta","tan","g"]],
+[165,"Rwanda",28,["wa","r","a"," rw","and","w","rw","rwa","nda","n","nd","an","da","d","wan"," r"]],
+[166,"Ghana",31,["h","ana","a","gh","ha","na"," gh","n"," g","an","gha","han","g"]],
+[167,"Czech Republic",28,["li","r","ch ","h r"," re"," r","b","e","ic","l","ep","epu","pub","lic","h ","bl","i","zec","u","rep","ech"," c","ze","ch","ec","ubl","ub","pu","cz","h","bli","cze","z","c"," cz","re","p"]],
+[168,"Belize",19,[" b","b","e","li","l","iz","ze"," be","liz","ize","z","eli","i","el","bel","be"]],
+[169,"Morocco",31,["r","ro","o","m"," m","mor","oro","roc","occ","mo","cco"," mo","c","oc","cc","or","co"]],
+[170,"Bangladesh",36,["gla","sh"," ba","ngl","la","g","ban","b","a","e","l","des","s","d","ng","ade","es","ang","h"," b","gl","ad","n","esh","an","de","lad","ba"]],
+[171,"New Zealand",26,["la","new","lan","ea","al","a","e","l","ew "," ze","d"," n","ze","and","w","w z","nd"," z"," ne","zea","ew","ala","z","n","w ","eal","an","ne"]],
+[172,"Sudan",32,["a"," s"," su","sud","uda","s","n","ud","su","da","d","u","an","dan"]],
+[173,"Bhutan",20,["h"," b","b","a","ut","bh","hut","hu","uta","n","t","an","u","bhu","ta","tan"," bh"]],
+[174,"Armenia",24,["r","men"," a","a","e","arm","i"," ar","me","m","ia","rm","rme","ni","nia","eni","n","en","ar"]],
+[175,"Vietnam",34,["et"," vi","vie","a","e","i","nam","ie","v","etn","m","na","t","vi","tn","am","iet"," v","tna","n"]],
+[176,"Albania",24,["lb","ban","alb","al"," a","a","b","l","lba","i"," al","ia","ni","nia","ani","n","an","ba"]],
+[177,"Cyprus",21,["ypr","r","ru"," c","y","cyp","s","cy","us","rus","c","pru","u","yp","pr"," cy","p"]],
+[178,"United Kingdom",33,["ted","d ","ed ","ed","in","gdo","k","d k","om","it","kin","gd","e","o","dom","i","u","d","ng","nit","ing","m","do","t","ki"," ki","ni","te","uni","un"," u"," k","n","ite","ngd"," un","g"]],
+[179,"Russia",35,["r","a","ru","si","ia","uss","s"," ru","us","rus","i","u","sia","ssi","ss"," r"]],
+[180,"Georgia",25,["r"," ge","org","a","e","o","gia"," g","i","eo","ia","rgi","ge","rg","geo","eor","gi","or","g"]],
+[181,"Andorra",14,["dor","r","ndo"," a","a","o","d"," an","and","do","ra","rr","rra","nd","orr","n","an","or"]],
+[182,"Montenegro",20,["egr","ont","r","mon"," m","ene","e","o","on","eg","gr","ro","ten","m","mo"," mo","t","te","gro","nte","n","nt","en","ne","g","neg"]],
+[183,"Yemen",31,[" ye","me","ye","e","men","y","m","yem","n","en"," y","eme","em"]],
+[184,"Burkina Faso",30,[" bu","r","a f","in","k","aso"," fa","kin","b","a","o","fa","so","urk","as","s","i","u","ur","rki","fas","bu","na","f"," f","ki","a ","rk","ina"," b","bur","n","na "]],
+[185,"Eswatini",22,["in","swa","a","e","esw","ini","s"," e","i"," es","wa","es","w","sw","ti","t","ni","tin","at","ati","n","wat"]],
+[186,"Monaco",12,["a","mon","o","m"," m","na","aco","on","mo","nac","n"," mo","c","ona","ac","co"]],
+[187,"Djibouti",21,["ut"," d","ji","ou"," dj","b","o","j","ibo","bou","i","d","u","dj","bo","uti","ti","t","jib","dji","ib","out"]],
+[188,"Lithuania",24,["li","hu","th"," l","it"," li","ith","a","l","ua","hua","i","u","ia","t","thu","ni","h","nia","lit","ani","n","an","uan"]],
+[189,"Algeria",32,["r","ria","ri","lge","al"," a","a","e","l","i"," al","lg","ia","ge","alg","eri","ger","er","g"]],
+[190,"Dominican Republic",28,["li","r"," d","in","nic","om"," re"," r","lic","can","a","e","o","b","l","ic","ep","epu","ini","bl","pub","dom","i","rep","d","u","an ","m","do","min","ica","ubl","ub","pu","ni","ca","n r","mi","bli"," do","omi","n","c","an","n ","re","p"]],
+[191,"Cameroon",31,["r","ame","oon","roo","oo","a","e","o","cam","on","me","ro"," c","m","ero","am","ca","er"," ca","n","c","mer"]]
+];
+const tags_list = tags_json.map(t => new Tag(t[0], t[1], t[2], t[3]));
+
+function cursor_to_end() {
+	// Trebuie corectat cursorul care clipește înăuntrul primului tag...
+	edit_panel.focus();
+	const selection = window.getSelection();
+	selection.selectAllChildren(edit_panel);
+	selection.collapseToEnd();
+}
+
+function ngramize(text, n = 3) {
+	// Determină ngramele până la ordinul n inclusiv.
+	text = ' ' + text;
+	const ngrams = new Set();
+	for (let k = 1; k <= n; k++) {
+		for (let i = 0; i <= text.length - k; i++) {
+			ngrams.add(text.slice(i, i + k));
+		}
+	}
+	ngrams.delete(" ");
+	return ngrams;
+}
+
+function similarity(a, b) {
+	// Parametrii sunt Sets.
+	// Se pot încerca și alți algoritmi de similaritate,
+	// asta-i cea mai simplă variantă (dă rezultate OK).
+	const intersection = [...a].filter(x => b.has(x));
+	return intersection.length / a.size;
+}
+
+function best_match(word_ngrams) {
+	// Determină tagul cel mai similar cu word_ngrams.
+	return tags_list.reduce((max, current_tag) => {
+	  const current_sim = similarity(word_ngrams, current_tag.ngrams);
+	  if (current_sim > max.sim) {
+	    return { tg: current_tag, sim: current_sim };
+	  } else {
+	    return max;
+	  }
+	}, { tag: null, sim: -Infinity });
+}
+
+function initial_suggestions() {
+	// Extragerea tagurilor din text.
+	const threshold = 0.6;
+	edit_panel.innerHTML = "";
+
+	// curățăm textul
+	let text = the_text.value;
+	text = text.trim().toLowerCase();
+	if (text === "") {
+		return;
+	}
+	text = text.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+	// îl rupem în cuvinte
+	let words = text.match(/\b\w+\b/g);
+	words = words.filter(w => w.length > 2);
+
+	// calculăm similaritățile cuvintelor din text cu tagurile de la server
+	// (best match pt. fiecare cuvânt)
+	const similarities = words.map(word => best_match(ngramize(word)));
+	// reținem top 10 taguri
+	let top10 = similarities.filter(tag_sim => tag_sim.sim > threshold);
+	top10 = top10.sort((a, b) => b.sim - a.sim)
+	top10 = top10.slice(0, 20);
+	top10 = new Set(top10.map(tag_sim => tag_sim.tg));
+	top10 = [...top10].sort((a, b) => b.hits - a.hits);
+	
+	// afișăm sugestiile
+	top10.forEach(x => x.show_in_edit());
+
+	// mutăm cursorul la sfârșit
+	cursor_to_end();
+}
+
+function live_suggestions() {
+	suggest_panel.innerHTML = "";
+	if (edit_panel.textContent == "" || edit_panel.lastChild.nodeName !== "#text") {
+		suggest_panel.style.visibility = "hidden";
+		return;
+	}
+	const threshold = 0.5;
+
+	// curățăm textul
+	let text = edit_panel.lastChild.textContent;
+	text = text.trim().toLowerCase();
+	if (text === "") {
+		return;
+	}
+	text = text.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+	text_ngrams = ngramize(text);
+
+	// calculăm similaritățile textului cu tagurile de la server
+	const similarities = tags_list.map(tag => ({ tg: tag, sim: similarity(text_ngrams, tag.ngrams) }));
+	// reținem top 10 taguri
+	let top10 = similarities.filter(tag_sim => tag_sim.sim > threshold);
+	top10 = top10.filter(tag_sim => Array.from(edit_panel.children).every(x => x.the_tag !== tag_sim.tg));
+	top10 = top10.sort((a, b) => b.sim - a.sim)
+	top10 = top10.slice(0, 10);
+	top10 = new Set(top10.map(tag_sim => tag_sim.tg));
+	top10 = [...top10].sort((a, b) => b.hits - a.hits);
+	
+	// afișăm sugestiile
+	if (top10.length > 0) {
+		top10.forEach(x => x.show_in_suggest());
+		suggest_panel.style.visibility = "visible";
+	} else {
+		suggest_panel.style.visibility = "hidden";
+	}
+}
+
+suggest_button.addEventListener("click", initial_suggestions);
+edit_panel.addEventListener("input", live_suggestions);
+
+</script>
+
+</body>
+</html>

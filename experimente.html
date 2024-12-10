@@ -1,0 +1,1757 @@
+<!doctype html>
+<html lang="en-UK">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
+
+	<title>Tag experiments</title>
+
+	<style>
+		.style-buttons {
+			position:absolute;
+			top:0;
+			right:1em;
+			font:14px/1.4 normal serif;
+			cursor:default;
+		}
+
+		.tag-body-tooltip,
+		.tag-count-tooltip,
+		.tag-trend-tooltip {
+			display:none;
+		}
+	</style>
+
+	<style id="multicol">
+		* {
+			margin:0;
+			padding:0;
+			border-width:0;
+			box-sizing:border-box;
+		}
+
+		body {
+			font-family: "Roboto", helvetica, arial, sans-serif;
+			font-size:11pt;
+			line-height:1.4;
+			font-weight:400;
+			background-color:#D5CAB0;
+		}
+
+		h3 {font-weight:300;color:#4D2122;font-size:1.7em;margin-top:-2em;}
+
+		.container {
+			width:80%;
+			margin: 4em auto;
+			
+		}
+
+		#lupa-search {
+			height:1.5em;
+			margin-left:1.3em;
+			margin-bottom:-2.8em;
+		}
+
+		.tag{
+			padding:0 .2em;
+			position:relative;
+			text-wrap:nowrap;
+			line-height:1;
+		}
+
+		.tags {
+			display:grid;
+			grid-template-columns:1fr 1fr;
+			grid-gap:2em;
+			font-size:1em;
+			width:100%;
+			line-height:3;
+		}
+		.tags section:last-of-type{
+			grid-column:1/-1;
+			
+		}
+		.tags h3 {
+			break-before:column;
+		}
+		.search-box {
+			padding: .5em .2em .5em 4em;
+			border: .09em solid darkgrey;
+			border-radius:.4em;
+			line-height:2;
+			min-height:2em;
+			box-sizing:content-box;
+			margin-bottom:5em;
+		}
+		.search-box:focus {
+		  outline: 2px solid #B81E00;
+		  outline-offset: -0.5px;
+		}
+
+		.tag-body {
+			position:relative;
+			display:inline-block;
+			padding: 0.5em 0;
+			margin: -0.5em 0;
+			margin: 0;
+			cursor:default;
+			color:white;
+			background-color:#6D465180;
+			z-index:1;
+			padding: .5em .2em;
+			border-radius:.4em;
+		}
+
+
+		.person-kind-tag .tag-body{ 
+			background-color:#58466D80;
+		}
+
+		.sort-tag .tag-body{ 
+			background-color:#988F9280;
+		}
+
+		.person-tag .tag-body{ 
+			background-color:#6D466180;
+		}
+
+		.domain-tag .tag-body{ 
+			background-color:#6D4B4680;
+		}
+
+		.country-tag .tag-body{
+			background-color:#626D4680;
+		}
+
+		.project-tag .tag-body{
+			background-color:#46516D80;
+		}
+
+			
+		.tag-picture {
+			position:relative;
+			height:2em;
+			left:-.2em;
+			margin-top:-.5em;
+			margin-bottom:-.64em;
+			opacity:0.6;
+		}
+		.tag-body:hover .tag-picture {
+			opacity:1;
+		}
+		.tag-picture + .tag-label {
+			padding-left:0;
+		}
+
+
+		.tag-field-label {
+			color:#666;
+			user-select: none;
+			-webkit-user-select: none; /* Safari */
+			-ms-user-select: none; /* IE 10 and IE 11 */
+		}
+		.tag-label {
+			position:relative;
+			bottom:-0.05em;
+			padding: 0 0 0 1em;
+			user-select: none;
+			-webkit-user-select: none; /* Safari */
+			-ms-user-select: none; /* IE 10 and IE 11 */
+		}
+
+
+		.tag.linked .tag-body .tag-label {
+			cursor:pointer;
+			font-weight:700;
+		}
+
+
+		.tag-close {
+			position:relative;
+			display:inline-block;
+			visibility:hidden;
+			width:0.8em;			
+			background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' viewBox='0 0 18 18'><path d='M1,17L17,1M1,1L17,17' style='stroke:white;stroke-width:2px;'/></svg>");
+			background-size: 0.7em 0.7em;
+			background-repeat:no-repeat;
+			background-position-y:0.18em;
+		}
+		.tag-close::after {
+			display:inline-block;
+			content:"";
+		}
+		.tag-close:hover {background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' width='9' height='9' viewBox='0 0 18 18'><path d='M1,17L17,1M1,1L17,17' style='stroke:%23FFEA7F;stroke-width:4px;'/></svg>");}
+		.tag.linked .tag-body:hover .tag-label {text-decoration:underline;}
+		.editable .tag-body:active {outline: 0.2em solid Highlight;}
+		.editable .tag-body:hover .tag-close {visibility:visible;}
+
+		.tag-count,
+		.tag-trend {
+			position:relative;
+			font-size:0.65em;
+			display:inline-block;
+			top:-1.6em;
+			background-color:#60515580;
+			color:white;
+			padding:0.2em;
+			font-weight:400;
+			z-index:1;
+			user-select: none;
+			-webkit-user-select: none; /* Safari */
+			-ms-user-select: none; /* IE 10 and IE 11 */
+		}
+		.tag-count {
+			display:inline-block;
+			text-align:center;
+			cursor:pointer;
+			font-weight:700;
+			left:-1.9em;
+			margin-right:-2.1em;		
+			min-width:1.5em;
+		}
+
+		.tag-count:hover {text-decoration:underline;}
+		.tag-trend {
+			left:-0.3em;
+			margin-right:-0.5em;
+			margin-left:-.2em;
+			font-weight:700;
+			color:#00FF00;
+			cursor:default;
+		}		
+
+
+		.tag-body:hover .tag-body-tooltip,
+		.tag-count:hover .tag-count-tooltip,
+		.tag-trend:hover .tag-trend-tooltip {
+			display:block;
+			text-align:center;
+			line-height:1.4;
+		}
+
+		.tag-body-tooltip-title {
+			display:block;
+			font-weight:700;
+			font-size:1.2em;
+			margin: 0.2em 0;
+			white-space:nowrap;
+			text-wrap:nowrap;
+		}
+
+		.tag-body-tooltip-picture {
+			width:5.2em;
+		}
+
+		.tag-body-tooltip-subtitle {
+			display:block;
+			font-style: italic;
+		}
+
+		.tag-count-tooltip-label {
+			display:block;
+			font-weight: bold;
+			white-space:nowrap;
+			text-wrap:nowrap;
+		}
+
+		.tag-body-tooltip,
+		.tag-count-tooltip,
+		.tag-trend-tooltip {
+			position:absolute;
+			display:none;
+			text-wrap:wrap;
+			left:50%;
+			transform:translateX(-50%);
+			width:auto;
+			padding:1em;
+			background-color:#F2E5C8;
+			font-weight:500;
+			color:black;
+			z-index:2;
+			border-radius:0.4em;
+		}
+
+
+
+
+		.tag-body-tooltip {
+			bottom:2.5em;
+			min-width:10em;
+		}
+
+		.tag-count-tooltip {
+			bottom:2.15em;
+			min-width:12em;
+		}
+		.tag-trend-tooltip {
+			bottom:1.85em;
+			min-width:10em;
+		}
+
+
+		.search-box .tag .tag-body-tooltip,
+		.search-box .tag .tag-count-tooltip,
+		.search-box .tag .tag-trend-tooltip {
+			display:none;
+		}
+	</style>
+
+	<style id="taskbar3">
+		* {margin:0; padding:0; border-width:0; box-sizing:border-box;}
+
+		body {
+			font:14px/1.4 normal helvetica, arial, sans-serif;
+			font-size:10pt;
+			line-height:1.4;
+			font-weight:400;
+			background-color:white;
+		}
+
+
+		h3 {font-weight:400;color:#7c7c7c;}
+		.container {
+			width:90%;
+			max-width:1600px;
+			margin: 2em auto 10em auto;
+			position:relative;
+			padding:1em;
+			background:#f2f2f2;
+			border:.1em solid #ccc;
+		}
+		.container:before {
+			content:"Place the mouse over an element to learn more about it.";
+			display:block;
+			position:fixed;
+			left:0;
+			bottom:0;
+			height:5em;
+			width:100%;
+			padding:.5em .5em;
+			background:#555;
+			color:#fff;
+			box-sizing:border-box;
+			z-index:99;
+			font-size:.85em;
+			line-height:1.2;
+		}
+
+		#lupa-search {
+			height:1.5em;
+			margin-left:1.4em;
+			margin-bottom:-2.8em;
+		}
+
+
+		.tag{
+			padding:0 .2em 0 0;
+			text-wrap:nowrap;
+			line-height:2;
+			display:inline-block;
+			margin: 0 .3em .3em 0;
+		}
+
+		.tags {
+			display:grid;
+			grid-template-columns:repeat(auto-fill,minmax(20em,1fr));
+			grid-gap:2em;
+			font-size:1em;
+			width:100%;
+			line-height:2.6;
+		}
+
+		@media (min-width: 1600px) {
+			.tags {
+				grid-template-columns:repeat(auto-fill,minmax(30em,1fr));
+			}
+		}
+		@media (min-width: 2400px) {
+			.tags {
+				grid-template-columns:repeat(auto-fill,minmax(35em,1fr));
+			}
+		}
+
+
+		.search-box {
+			padding: .5em .2em .5em 4em;
+			width:100%;
+			border: .09em solid darkgrey;
+			border-radius:.2em;
+			line-height:2;
+			min-height:2em;
+			background:#fff;
+		}
+
+		.tag-body {
+			display:inline-block;
+			margin: 0;
+			cursor:default;
+			border:.1em solid #ccc;
+			padding: 0 .2em 0 .2em;
+		}
+
+
+		.person-kind-tag .tag-body,
+		.person-kind-tag .tag-count,
+		.person-kind-tag .tag-trend
+		{ 
+			background-color:#d7d8f8;
+		}
+
+		.sort-tag .tag-body,
+		.sort-tag .tag-count,
+		.sort-tag .tag-trend
+		{ 
+			background-color:#c8d9da;
+		}
+
+
+		.person-tag .tag-body,
+		.person-tag .tag-count,
+		.person-tag .tag-trend{ 
+			background-color:#f4f7ff;
+		}
+
+		.domain-tag .tag-body,
+		.domain-tag .tag-count,
+		.domain-tag .tag-trend{ 
+			background-color:#bbf3c0;
+		}
+
+		.country-tag .tag-body,
+		.country-tag .tag-count,
+		.country-tag .tag-trend{
+			background-color:#f1f3bb;
+		}
+		.project-tag .tag-body,
+		.project-tag .tag-count,
+		.project-tag .tag-trend{
+			background-color:#bbf1f3;
+		}
+
+
+		.tag-picture {
+			position:relative;
+			z-index:1;
+			height:2em;
+			left:-.2em;
+			margin-top:-.5em;
+			margin-bottom:-.64em
+		}
+
+
+		.tag-field-label {
+			color:#888;
+			padding-left:.2em;
+			user-select: none;
+			-webkit-user-select: none; /* Safari */
+			-ms-user-select: none; /* IE 10 and IE 11 */
+		}
+		.tag-label {
+			position:relative;
+			z-index:1;
+			bottom:-0.05em;
+			padding: 0 0 0 1em;
+			user-select: none;
+			-webkit-user-select: none; /* Safari */
+			-ms-user-select: none; /* IE 10 and IE 11 */
+		}
+		.tag-picture + .tag-label {
+			padding-left:0;
+		}
+
+
+
+
+		.tag.linked .tag-body .tag-label {
+			cursor:pointer;
+			font-weight:700;
+		}
+
+
+
+
+		.tag-close {
+			position:relative;
+			z-index:1;
+			display:inline-block;
+			visibility:hidden;
+			width:0.8em;	
+			background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' viewBox='0 0 18 18'><path d='M1,17L17,1M1,1L17,17' style='stroke:black;stroke-width:2px;'/></svg>");
+			background-size: 0.7em 0.7em;
+			background-repeat:no-repeat;
+			background-position:50% 50%;
+		}
+
+
+
+		.tag-close::after {
+			display:inline-block;
+			content:"";
+		}
+		.tag-close:hover {background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' width='9' height='9' viewBox='0 0 18 18'><path d='M1,17L17,1M1,1L17,17' style='stroke:red;stroke-width:2px;'/></svg>");}
+		.tag.linked .tag-body:hover .tag-label {text-decoration:underline;}
+		.editable .tag-body:active {outline: 0.2em solid Highlight;}
+		.editable .tag-body:hover .tag-close {visibility:visible;}
+
+
+		.tag-count,
+		.tag-trend {
+			display:inline-block;
+			padding: 0 .2em;
+			font-weight:400;
+			border:.1em solid #ccc;
+			user-select: none;
+			-webkit-user-select: none; /* Safari */
+			-ms-user-select: none; /* IE 10 and IE 11 */
+		}
+		.tag-count {
+			cursor:pointer;
+			font-weight:700;
+			color:#000;
+			margin-left:-.5em;
+		}
+
+		.tag-count:hover {text-decoration:underline;}
+		.tag-trend {
+			font-weight:700;
+			color:#c30;
+			cursor:default;
+			border-left:none;
+			margin-left:-.5em;
+		}	
+
+		.linked .tag-body:hover:before,
+		.tag-count:hover:before,
+		.tag-trend:hover:before {
+			content:'';
+			position:fixed;
+			left:0;
+			bottom:0;
+			width:100%;
+			padding: 0;
+			height:4em;
+			background:#555;
+			z-index:999;
+			line-height:1.1;
+			box-sizing:border-box;
+		}
+
+
+		.tag-body-tooltip,
+		.tag-count-tooltip,
+		.tag-trend-tooltip{
+			position:fixed;
+			z-index:9999;
+			left:0;
+			bottom:0;
+			width:100%;
+			padding: .5em .5em;
+			height:5em;
+			align-items:start;
+			text-align:left;
+			text-wrap:wrap;
+			box-sizing:border-box;
+			color:#fff;
+			font-size:.85em;
+			line-height:1.1;
+			box-sizing:border-box;
+			background:#555;
+			line-height:1.2;
+			visibility:hidden;
+			display:block;
+		}
+
+
+		.tag-body-tooltip {
+			display:grid;
+			grid-template-columns: 4em auto;
+			grid-template-rows: 2em 2em;
+			grid-column-gap:.2em;
+			grid-row-gap:0;
+		}
+
+
+
+		.tag-count-tooltip,
+		.tag-trend-tooltip {
+			font-weight:initial;
+			color:#fff;
+		}
+
+
+		.tag-body:hover  .tag-body-tooltip,
+		.tag-count:hover .tag-count-tooltip,
+		.tag-trend:hover .tag-trend-tooltip {
+			visibility:visible;
+		}
+
+
+		.tag-count-tooltip-label {
+			display:block;
+			font-weight: bold;
+		}
+
+
+
+
+		.tag-body-tooltip-picture {
+			width:auto;
+			height:4em;
+			grid-row-start:1;
+			grid-row-end:3;
+			display:block;
+		}
+		.tag-body-tooltip-title {
+			display:block;
+			font-weight:700;
+			font-size:1em;
+			margin: 0;
+			grid-column-start:1;
+			grid-column-end:3;
+		}
+
+		.tag-body-tooltip-subtitle {
+			display:block;
+			font-style: italic;
+			grid-column-start:1;
+			grid-column-end:3;
+		}
+
+		.tag-body-tooltip-picture + .tag-body-tooltip-title + .tag-body-tooltip-subtitle,
+		.tag-body-tooltip-picture + .tag-body-tooltip-title {
+			grid-column-start:2;
+			grid-column-end:3;
+		}
+
+
+		.tag-body-tooltip br,
+		.tag-count-tooltip br,
+		.tag-trend-tooltip br {
+			display:none;
+		}
+	</style>
+
+	<style id="rotunde">
+		* {margin:0; padding:0; border-width:0; box-sizing:border-box;}
+
+		h3 {
+			color:#666;
+			margin-top:1em;
+		}
+
+		body {
+			font-family: "Roboto", helvetica, arial, sans-serif;
+			font-size:11pt;
+			line-height:1.4;
+			font-weight:400;
+			background-color:#EEF0F2;
+		}
+
+		.container {
+			width:66%;
+			margin: 0.5em auto;
+		}
+
+		#lupa-search {
+			position:relative;
+			height:1.6em;
+			margin-top:2em;
+			right:-26.4%;
+			top:3.1em;
+		}
+
+		.search-box {
+			position:relative;
+			margin: 0 0 0 auto;
+			width:75%;
+			padding: 1.5em .2em 1.25em 4em;
+			border: .09em solid darkgrey;
+			border-radius:.2em;
+			min-height:4em;
+			font-size:10pt;
+			line-height:1;
+		}
+		.search-box::after {
+			position:absolute;
+			bottom:-1.5em;
+			left:-33.333%;
+			content:'';
+			height:0.1em;
+			width:133.33%;
+			border-bottom: 0.15em solid #999;
+		}
+
+		.tags {
+			font-size:1em;
+			width:100%;
+			line-height:3;
+		}
+
+
+		.tag {
+			text-wrap:nowrap;
+			line-height:1;
+			margin-right:-1em;
+			padding-right:0.8em;
+		}
+		.tag-field-label {
+			color:#999;
+			user-select: none;
+			-webkit-user-select: none; /* Safari */
+			-ms-user-select: none; /* IE 10 and IE 11 */
+		}
+		.tag-label {
+			position:relative;
+			padding: 0 1em;
+			bottom:-0.05em;
+			user-select: none;
+			-webkit-user-select: none; /* Safari */
+			-ms-user-select: none; /* IE 10 and IE 11 */
+		}
+		.tag.linked .tag-body .tag-label {
+			cursor:pointer;
+			font-weight:700;
+		}
+		.tag-body {
+			position:relative;
+			display:inline-block;
+			padding: 0.5em 0;
+			margin: -0.5em 0;
+			background-color:white;
+			box-shadow: 0 0 .5em #0000001f;
+			border-radius:2em;
+			cursor:default;
+		}
+		.tag-picture {
+			position:relative;
+			margin: -0.5em -0.7em -0.5em 0;
+			bottom:0.025em;
+			vertical-align:middle;
+			height:2em;
+			clip-path:circle(1em at center);
+			border:0;
+		}
+		.tag-close {
+			position:relative;
+			display:inline-block;
+			visibility:hidden;
+			width:0.8em;
+			left:-1.2em;
+			margin-right:-1.2em;
+			background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' viewBox='0 0 18 18'><path d='M1,17L17,1M1,1L17,17' style='stroke:%239F0000;stroke-width:2px;'/></svg>");
+			background-size: 0.7em 0.7em;
+			background-repeat:no-repeat;
+			background-position-y:0.18em;
+		}
+		.tag-close::after {
+			display:inline-block;
+			content:"";
+		}
+
+		.tag.linked .tag-body:hover .tag-label {text-decoration:underline;}
+		.editable .tag-body:active {outline: 0.2em solid Highlight;}
+		.editable .tag-body:hover .tag-close {visibility:visible;}
+		.tag-close:hover {background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' width='9' height='9' viewBox='0 0 18 18'><path d='M1,17L17,1M1,1L17,17' style='stroke:red;stroke-width:4px;'/></svg>");}
+
+
+		.tag-count,
+		.tag-trend {
+			position:relative;
+			font-size:0.75em;
+			bottom:1.5em;
+			user-select: none;
+			-webkit-user-select: none; /* Safari */
+			-ms-user-select: none; /* IE 10 and IE 11 */
+		}
+		.tag-count {
+			display:inline-block;
+			left:-1.5em;
+			margin-right:-1.5em;
+			color:#000;
+			background-color:#EEF0F2;
+			padding: 0.2em .4em;
+			border-radius:2em;
+			min-width:1.5em;
+			text-align:center;
+			cursor:pointer;
+		}
+		.tag-trend {
+			left:-0.6em;
+			margin-right:-0.5em;
+			font-weight:700;
+			color:#c30;
+			cursor:default;
+		}
+
+		.tag-count:hover {text-decoration:underline;}
+
+		.tag-body-tooltip,
+		.tag-count-tooltip,
+		.tag-trend-tooltip {
+			position:absolute;
+			display:none;
+			text-wrap:wrap;
+			bottom:2.3em;
+			left:50%;
+			transform:translateX(-50%);
+			background-color:#FDFFE6E4;
+			box-shadow: 0 0 .5em #0000001f;
+			width:auto;
+			padding:1em;
+			border-radius:1em;
+			font-weight:400;
+			color:black;
+		}
+		.tag-body-tooltip {
+			bottom:2.75em;
+			min-width:10em;
+		}
+		.tag-count-tooltip {
+			bottom:2.4em;
+			min-width:12em;
+		}
+		.tag-trend-tooltip {
+			bottom:2em;
+			min-width:10em;
+		}
+
+		.tag-body-tooltip-picture {
+			width:5.2em;
+			clip-path:circle(2.6em at center);
+		}
+		.tag-body-tooltip-title {
+			display:block;
+			font-weight:700;
+			font-size:1.2em;
+			margin: 0.2em 0;
+			white-space:nowrap;
+			text-wrap:nowrap;
+		}
+		.tag-body-tooltip-subtitle {
+			display:block;
+			font-style: italic;
+		}
+		.tag-count-tooltip-label {
+			display:block;
+			font-weight: bold;
+			white-space:nowrap;
+			text-wrap:nowrap;
+		}
+
+		.tag-body-tooltip::after,
+		.tag-count-tooltip::after,
+		.tag-trend-tooltip::after {
+			position:absolute;
+			display:inline-block;
+			content:"";
+			left:50%;
+			top:100%;
+			transform:translateX(-50%);
+			border-style:solid;
+			border-width:0.75em;
+			border-color:#FDFFE6E4 transparent transparent transparent;
+		}
+		.tag-body:hover .tag-body-tooltip,
+		.tag-count:hover .tag-count-tooltip,
+		.tag-trend:hover .tag-trend-tooltip {
+			display:block;
+			text-align:center;
+			line-height:1.4;
+		}
+
+		.search-box .tag .tag-body-tooltip,
+		.search-box .tag .tag-count-tooltip,
+		.search-box .tag .tag-trend-tooltip {
+			display:none;
+		}
+
+		.tag-field-label {
+			color:#7F7F7F;
+			margin-right:-1em;
+			padding: .4em 0 .45em .5em;
+			background:#ffffff80;
+			border-radius: 2em 0 0 2em;
+			box-shadow: 0 0 .5em #0000001f;
+		}
+		.tag-field-label:after {
+			position:relative;
+			display:inline-block;
+			content:'';
+			height:2.2em;
+			width:2.2em;
+			border-radius:2.2em;
+			background:#eef0f2;
+			bottom:-0.8em;
+			left:0.2em;
+			margin: -1.2em -1em 0 0;
+		}
+		.tag-field-label + span {
+			position:relative;
+			z-index:1
+		}
+		.tag-count {
+			z-index:3;
+		}
+
+		.tag-trend {
+			z-index:4;
+		}
+
+		.tag-count-tooltip {
+			z-index:5;
+		}
+
+		.tag-trend-tooltip {
+			z-index:6;
+		}
+	</style>
+
+	<script>
+		function toggleStylesheet(id) {
+			const stylesheets = document.querySelectorAll('style');
+			stylesheets.forEach(function(stylesheet) {
+				if (stylesheet.id) stylesheet.disabled = !(stylesheet.id === id)
+			});
+		}
+		toggleStylesheet('reset');
+	</script>
+
+</head>
+
+<body>
+
+<div class="style-buttons">
+<span onclick="toggleStylesheet('barebones')">[de la server]</span>
+<span onclick="toggleStylesheet('multicol')">[stil 1]</span>
+<span onclick="toggleStylesheet('taskbar3')">[stil 2]</span>
+<span onclick="toggleStylesheet('rotunde')">[stil 3]</span>
+</div>
+
+<svg style="display:none;" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+	<defs>
+		<symbol id="lupa">
+			<path d="M18.006,23.652C17.628,23.133 16.945,22.938 16.349,23.179C15.003,23.711 13.535,24 12,24C5.377,24 -0,18.623 -0,12C-0,5.377 5.377,0 12,0C18.623,0 24,5.377 24,12C24,14.87 22.99,17.506 21.307,19.572C20.894,20.06 20.868,20.768 21.245,21.285C22.794,23.433 26.582,28.639 26.582,28.639C27.036,29.264 26.898,30.14 26.274,30.595L25.303,31.301C24.679,31.755 23.802,31.617 23.348,30.992L18.006,23.652ZM12,2C6.481,2 2,6.481 2,12C2,17.519 6.481,22 12,22C17.519,22 22,17.519 22,12C22,6.481 17.519,2 12,2Z"/>
+		</symbol>
+		<symbol id="project-icon">
+			<circle cx="14" cy="14" r="14" style="fill:rgb(230,230,230);"/>
+			<path d="M22.754,22.538L5.246,22.538C4.635,22.538 4.139,22.043 4.139,21.432C4.139,20.821 4.635,20.325 5.246,20.325L6.321,20.325L6.321,7.374L21.679,7.374L21.679,20.325L22.754,20.325C23.365,20.325 23.861,20.821 23.861,21.432C23.861,22.043 23.365,22.538 22.754,22.538Z" style="fill:white;"/>
+			<path d="M4.139,21.432L4.139,6.568C4.139,5.957 4.635,5.462 5.246,5.462L6.321,5.462L6.321,20.325L5.246,20.325C4.635,20.325 4.139,20.821 4.139,21.432ZM23.861,21.432C23.861,20.821 23.365,20.325 22.754,20.325L21.679,20.325L21.679,5.462L22.754,5.462C23.365,5.462 23.861,5.957 23.861,6.568L23.861,21.432Z" style="fill:rgb(204,204,204);"/>
+			<path d="M9.993,15.592L8.906,15.592L8.906,14.297L9.996,14.297C10.1,13.661 10.352,13.075 10.716,12.575L9.94,11.8L10.856,10.885L11.633,11.662C12.133,11.302 12.718,11.052 13.353,10.951L13.353,9.85L14.647,9.85L14.647,10.951C15.282,11.052 15.867,11.302 16.367,11.662L17.144,10.885L18.06,11.8L17.284,12.575C17.648,13.075 17.9,13.661 18.004,14.297L19.094,14.297L19.094,15.592L18.007,15.592C17.907,16.23 17.657,16.82 17.294,17.323L18.06,18.089L17.144,19.004L16.381,18.24C15.878,18.606 15.287,18.859 14.647,18.962L14.647,20.038L13.353,20.038L13.353,18.962C12.713,18.859 12.122,18.606 11.619,18.24L10.856,19.004L9.94,18.089L10.706,17.323C10.343,16.82 10.093,16.23 9.993,15.592Z" style="fill:rgb(153,153,153);"/>
+			<circle cx="14" cy="14.956" r="2.818" style="fill:rgb(204,204,204);"/>
+			<circle cx="14" cy="14.956" r="1.205" style="fill:white;"/>
+		</symbol>
+	</defs>
+</svg>
+
+<div class="container">
+
+	<div class="search-section">
+
+		<svg id="lupa-search" width="28" height="32" viewBox="0 0 28 32"><use xlink:href="#lupa"></use></svg>
+
+		<div class="search-box editable" contenteditable="true">
+
+			<span> </span>
+			
+			<span class="tag person-kind-tag" contenteditable="false">
+				<span class="tag-body">
+					<span class="tag-label">domain expert</span>
+					<span class="tag-close"></span>
+				</span>
+				<span class="tag-count">82<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">domain expert</span> used 82 times<br>(click to see where)</span></span>
+			</span>
+			
+			<span class="tag domain-tag" contenteditable="false">
+				<span class="tag-field-label">activity:</span>
+				<span class="tag-body">
+					<span class="tag-label">agriculture</span>
+					<span class="tag-close"></span>
+				</span>
+				<span class="tag-count">209<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">agriculture</span> used 209 times<br>(click to see where)</span></span>
+			</span>
+			
+			<span class="tag country-tag" contenteditable="false">
+				<span class="tag-body">
+					<span class="tag-label">Poland</span>
+					<span class="tag-close"></span>
+				</span>
+				<span class="tag-count">9<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">Poland</span> used 9 times<br>(click to see where)</span></span>
+			</span>
+			
+			<span class="tag sort-tag" contenteditable="false">
+				<span class="tag-body">
+					<span class="tag-label">by registration date</span>
+					<span class="tag-close"></span>
+				</span>
+			</span>
+
+		</div>
+
+	</div>
+
+	<div class="tags">
+
+		<section class="tags-participants">
+
+			<h3>Participants</h3>
+
+			<span class="tag person-tag linked" contenteditable="false">
+				<span class="tag-body">
+					<img class="tag-picture" src="https://randomuser.me/api/portraits/thumb/men/23.jpg">
+					<span class="tag-label">John Montgomery Doe</span>
+					<span class="tag-close"></span>
+					<span class="tag-body-tooltip">
+							<img class="tag-body-tooltip-picture" src="https://randomuser.me/api/portraits/med/men/23.jpg">
+							<span class="tag-body-tooltip-title">John Montgomery Doe</span>
+							<span class="tag-body-tooltip-subtitle">Best foresighter in town!</span>
+					</span>
+				</span>
+				<span class="tag-count">29<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">John Montgomery Doe</span> used 29 times<br>(click to see where)</span></span>
+				<span class="tag-trend">+5<span class="tag-trend-tooltip">5 mentions<br>in the last month</span></span>
+			</span>
+			
+			<span class="tag person-tag linked" contenteditable="false">
+				<span class="tag-body">
+					<img class="tag-picture" src="https://randomuser.me/api/portraits/thumb/women/25.jpg">
+					<span class="tag-label">Jane Naomi Doe</span>
+					<span class="tag-close"></span>
+					<span class="tag-body-tooltip">
+							<img class="tag-body-tooltip-picture" src="https://randomuser.me/api/portraits/med/women/25.jpg">
+							<span class="tag-body-tooltip-title">Jane Naomi Doe</span>
+							<span class="tag-body-tooltip-subtitle">Nice gal</span>
+					</span>
+				</span>
+				<span class="tag-count">8<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">Jane Naomi Doe</span> used 8 times<br>(click to see where)</span></span>
+			</span>
+			
+			<span class="tag person-tag" contenteditable="false">
+				<span class="tag-body">
+					<span class="tag-label">Albert Einstein</span>
+					<span class="tag-close"></span>
+				</span>
+				<span class="tag-count">12<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">Albert Einstein</span> used 12 times<br>(click to see where)</span></span>
+			</span>
+			
+			<span class="tag person-tag linked" contenteditable="false">
+				<span class="tag-body">
+					<img class="tag-picture" src="https://randomuser.me/api/portraits/thumb/men/8.jpg">
+					<span class="tag-label">Gary D. Hemingway</span>
+					<span class="tag-close"></span>
+					<span class="tag-body-tooltip">
+							<img class="tag-body-tooltip-picture" src="https://randomuser.me/api/portraits/med/men/8.jpg">
+							<span class="tag-body-tooltip-title">Gary D. Hemingway</span>
+					</span>
+				</span>
+				<span class="tag-count">57<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">Gary D. Hemingway</span> used 57 times<br>(click to see where)</span></span>
+			</span>
+			
+			<span class="tag person-tag" contenteditable="false">
+				<span class="tag-body">
+					<span class="tag-label">René Magritte</span>
+					<span class="tag-close"></span>
+					<span class="tag-body-tooltip">
+							<span class="tag-body-tooltip-title">René Magritte</span>
+							<span class="tag-body-tooltip-subtitle">Belgian Painter</span>
+					</span>
+				</span>
+				<span class="tag-count">17<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">René Magritte</span> used 17 times<br>(click to see where)</span></span>
+			</span>
+			
+			<span class="tag person-tag linked" contenteditable="false">
+				<span class="tag-body">
+					<img class="tag-picture" src="https://randomuser.me/api/portraits/thumb/women/15.jpg">
+					<span class="tag-label">Ana-Maria Popescu</span>
+					<span class="tag-close"></span>
+					<span class="tag-body-tooltip">
+							<img class="tag-body-tooltip-picture" src="https://randomuser.me/api/portraits/med/women/15.jpg">
+							<span class="tag-body-tooltip-title">Ana-Maria Popescu</span>
+					</span>
+				</span>
+				<span class="tag-count">12<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">Ana-Maria Popescu</span> used 12 times<br>(click to see where)</span></span>
+			</span>
+			
+			<span class="tag person-tag" contenteditable="false">
+				<span class="tag-body">
+					<span class="tag-label">J. Doe</span>
+					<span class="tag-close"></span>
+					<span class="tag-body-tooltip">
+							<span class="tag-body-tooltip-title">J. Doe</span>
+							<span class="tag-body-tooltip-subtitle">Johann Doe</span>
+					</span>
+				</span>
+				<span class="tag-count">3<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">J. Doe</span> used 3 times<br>(click to see where)</span></span>
+			</span>
+
+			<span class="tag person-tag linked" contenteditable="false">
+				<span class="tag-body">
+					<img class="tag-picture" src="https://randomuser.me/api/portraits/thumb/men/50.jpg">
+					<span class="tag-label">Armin Hellerud</span>
+					<span class="tag-close"></span>
+					<span class="tag-body-tooltip">
+							<img class="tag-body-tooltip-picture" src="https://randomuser.me/api/portraits/med/men/50.jpg">
+							<span class="tag-body-tooltip-title">Armin Hellerud</span>
+							<span class="tag-body-tooltip-subtitle">Proin pulvinar!</span>
+					</span>
+				</span>
+				<span class="tag-count">19<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">Armin Hellerud</span> used 19 times<br>(click to see where)</span></span>
+			</span>
+			
+			<span class="tag person-tag linked" contenteditable="false">
+				<span class="tag-body">
+					<img class="tag-picture" src="https://randomuser.me/api/portraits/thumb/men/42.jpg">
+					<span class="tag-label">Marc Flores</span>
+					<span class="tag-close"></span>
+					<span class="tag-body-tooltip">
+							<img class="tag-body-tooltip-picture" src="https://randomuser.me/api/portraits/med/men/42.jpg">
+							<span class="tag-body-tooltip-title">Marc Flores</span>
+							<span class="tag-body-tooltip-subtitle">Etiam euismod nisi.</span>
+					</span>
+				</span>
+				<span class="tag-count">4<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">Marc Flores</span> used 4 times<br>(click to see where)</span></span>
+			</span>
+			
+			<span class="tag person-tag linked" contenteditable="false">
+				<span class="tag-body">
+					<img class="tag-picture" src="https://randomuser.me/api/portraits/thumb/women/83.jpg">
+					<span class="tag-label">Marie Olsen</span>
+					<span class="tag-close"></span>
+					<span class="tag-body-tooltip">
+							<img class="tag-body-tooltip-picture" src="https://randomuser.me/api/portraits/med/women/83.jpg">
+							<span class="tag-body-tooltip-title">Marie Olsen</span>
+							<span class="tag-body-tooltip-subtitle">Aliquam eu turpis.</span>
+					</span>
+				</span>
+				<span class="tag-count">47<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">Marie Olsen</span> used 47 times<br>(click to see where)</span></span>
+			</span>
+			
+			<span class="tag person-tag linked" contenteditable="false">
+				<span class="tag-body">
+					<img class="tag-picture" src="https://randomuser.me/api/portraits/thumb/women/39.jpg">
+					<span class="tag-label">Angelina Duval</span>
+					<span class="tag-close"></span>
+					<span class="tag-body-tooltip">
+							<img class="tag-body-tooltip-picture" src="https://randomuser.me/api/portraits/med/women/39.jpg">
+							<span class="tag-body-tooltip-title">Angelina Duval</span>
+							<span class="tag-body-tooltip-subtitle">Nunc tincidunt.</span>
+					</span>
+				</span>
+				<span class="tag-count">153<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">Angelina Duval</span> used 153 times<br>(click to see where)</span></span>
+			</span>
+			
+			<span class="tag person-tag linked" contenteditable="false">
+				<span class="tag-body">
+					<img class="tag-picture" src="https://randomuser.me/api/portraits/thumb/men/82.jpg">
+					<span class="tag-label">آرسین نجاتی</span>
+					<span class="tag-close"></span>
+					<span class="tag-body-tooltip">
+							<img class="tag-body-tooltip-picture" src="https://randomuser.me/api/portraits/med/men/82.jpg">
+							<span class="tag-body-tooltip-title">آرسین نجاتی</span>
+							<span class="tag-body-tooltip-subtitle">Nullam non erat vitae!</span>
+					</span>
+				</span>
+				<span class="tag-count">71<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">آرسین نجاتی</span> used 71 times<br>(click to see where)</span></span>
+			</span>
+			
+			<span class="tag person-tag linked" contenteditable="false">
+				<span class="tag-body">
+					<img class="tag-picture" src="https://randomuser.me/api/portraits/thumb/men/53.jpg">
+					<span class="tag-label">Lázaro Caldeira</span>
+					<span class="tag-close"></span>
+					<span class="tag-body-tooltip">
+							<img class="tag-body-tooltip-picture" src="https://randomuser.me/api/portraits/med/men/53.jpg">
+							<span class="tag-body-tooltip-title">Lázaro Caldeira</span>
+							<span class="tag-body-tooltip-subtitle">Sed fermentum ligula faucibus!</span>
+					</span>
+				</span>
+				<span class="tag-count">3<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">Lázaro Caldeira</span> used 3 times<br>(click to see where)</span></span>
+			</span>
+			
+			<span class="tag person-tag linked" contenteditable="false">
+				<span class="tag-body">
+					<img class="tag-picture" src="https://randomuser.me/api/portraits/thumb/women/17.jpg">
+					<span class="tag-label">Daniella Abdulle</span>
+					<span class="tag-close"></span>
+					<span class="tag-body-tooltip">
+							<img class="tag-body-tooltip-picture" src="https://randomuser.me/api/portraits/med/women/17.jpg">
+							<span class="tag-body-tooltip-title">Daniella Abdulle</span>
+							<span class="tag-body-tooltip-subtitle">Donec at nulla egestas!</span>
+					</span>
+				</span>
+				<span class="tag-count">+1k<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">Daniella Abdulle</span> used 1503 times<br>(click to see where)</span></span>
+			</span>
+			
+			<span class="tag person-tag linked" contenteditable="false">
+				<span class="tag-body">
+					<img class="tag-picture" src="https://randomuser.me/api/portraits/thumb/women/18.jpg">
+					<span class="tag-label">Buse Düşenkalkar</span>
+					<span class="tag-close"></span>
+					<span class="tag-body-tooltip">
+							<img class="tag-body-tooltip-picture" src="https://randomuser.me/api/portraits/med/women/18.jpg">
+							<span class="tag-body-tooltip-title">Buse Düşenkalkar</span>
+							<span class="tag-body-tooltip-subtitle">Suspendisse laoreet metus.</span>
+					</span>
+				</span>
+				<span class="tag-count">36<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">Buse Düşenkalkar</span> used 36 times<br>(click to see where)</span></span>
+			</span>
+			
+			<span class="tag person-tag linked" contenteditable="false">
+				<span class="tag-body">
+					<img class="tag-picture" src="https://randomuser.me/api/portraits/thumb/women/29.jpg">
+					<span class="tag-label">Reema Taj</span>
+					<span class="tag-close"></span>
+					<span class="tag-body-tooltip">
+							<img class="tag-body-tooltip-picture" src="https://randomuser.me/api/portraits/med/women/29.jpg">
+							<span class="tag-body-tooltip-title">Reema Taj</span>
+							<span class="tag-body-tooltip-subtitle">Aenean elementum ante!</span>
+					</span>
+				</span>
+				<span class="tag-count">7<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">Reema Taj</span> used 7 times<br>(click to see where)</span></span>
+			</span>
+			
+			<span class="tag person-tag linked" contenteditable="false">
+				<span class="tag-body">
+					<img class="tag-picture" src="https://randomuser.me/api/portraits/thumb/women/60.jpg">
+					<span class="tag-label">Freja Nielsen</span>
+					<span class="tag-close"></span>
+					<span class="tag-body-tooltip">
+							<img class="tag-body-tooltip-picture" src="https://randomuser.me/api/portraits/med/women/60.jpg">
+							<span class="tag-body-tooltip-title">Freja Nielsen</span>
+							<span class="tag-body-tooltip-subtitle">Proin aliquam ante id</span>
+					</span>
+				</span>
+				<span class="tag-count">42<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">Freja Nielsen</span> used 42 times<br>(click to see where)</span></span>
+			</span>
+			
+			<span class="tag person-tag linked" contenteditable="false">
+				<span class="tag-body">
+					<img class="tag-picture" src="https://randomuser.me/api/portraits/thumb/women/19.jpg">
+					<span class="tag-label">Debbie Williamson</span>
+					<span class="tag-close"></span>
+					<span class="tag-body-tooltip">
+							<img class="tag-body-tooltip-picture" src="https://randomuser.me/api/portraits/med/women/19.jpg">
+							<span class="tag-body-tooltip-title">Debbie Williamson</span>
+							<span class="tag-body-tooltip-subtitle">Morbi consequat nisl!</span>
+					</span>
+				</span>
+				<span class="tag-count">25<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">Debbie Williamson</span> used 25 times<br>(click to see where)</span></span>
+			</span>
+			
+			<span class="tag person-tag linked" contenteditable="false">
+				<span class="tag-body">
+					<img class="tag-picture" src="https://randomuser.me/api/portraits/thumb/men/44.jpg">
+					<span class="tag-label">Philippe Slawa</span>
+					<span class="tag-close"></span>
+					<span class="tag-body-tooltip">
+							<img class="tag-body-tooltip-picture" src="https://randomuser.me/api/portraits/med/men/44.jpg">
+							<span class="tag-body-tooltip-title">Philippe Slawa</span>
+							<span class="tag-body-tooltip-subtitle">Curabitur non mauris.</span>
+					</span>
+				</span>
+				<span class="tag-count">75<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">Philippe Slawa</span> used 75 times<br>(click to see where)</span></span>
+			</span>
+		
+		</section>
+
+
+		<section class="tags-domains">
+
+			<h3>Domains</h3>
+
+			<span class="tag domain-tag" contenteditable="false">
+				<span class="tag-body">
+					<span class="tag-label">agriculture</span>
+					<span class="tag-close"></span>
+				</span>
+				<span class="tag-count">209<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">agriculture</span> used 209 times<br>(click to see where)</span></span>
+			</span>
+			
+			<span class="tag domain-tag" contenteditable="false">
+				<span class="tag-body">
+					<span class="tag-label">marine biology</span>
+					<span class="tag-close"></span>
+				</span>
+				<span class="tag-count">31<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">marine biology</span> used 31 times<br>(click to see where)</span></span>
+			</span>
+			
+			<span class="tag domain-tag" contenteditable="false">
+				<span class="tag-body">
+					<span class="tag-label">crypto</span>
+					<span class="tag-close"></span>
+					<span class="tag-body-tooltip">
+							<span class="tag-body-tooltip-title">crypto</span>
+							<span class="tag-body-tooltip-subtitle">new buzzword</span>
+					</span>
+				</span>
+				<span class="tag-count">17<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">crypto</span> used 17 times<br>(click to see where)</span></span>
+			</span>
+			
+			<span class="tag domain-tag" contenteditable="false">
+				<span class="tag-body">
+					<span class="tag-label">sustainable development</span>
+					<span class="tag-close"></span>
+				</span>
+				<span class="tag-count">83<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">sustainable development</span> used 83 times<br>(click to see where)</span></span>
+			</span>
+
+			<span class="tag domain-tag" contenteditable="false">
+				<span class="tag-body">
+					<span class="tag-label">EV</span>
+					<span class="tag-close"></span>
+					<span class="tag-body-tooltip">
+							<span class="tag-body-tooltip-title">EV</span>
+							<span class="tag-body-tooltip-subtitle">electric vehicles</span>
+					</span>
+				</span>
+				<span class="tag-count">65<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">EV</span> used 65 times<br>(click to see where)</span></span>
+			</span>
+
+
+			<span class="tag domain-tag" contenteditable="false">
+				<span class="tag-body">
+					<span class="tag-label">urban planning</span>
+					<span class="tag-close"></span>
+				</span>
+				<span class="tag-count">99<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">urban planning</span> used 99 times<br>(click to see where)</span></span>
+			</span>
+
+			<span class="tag domain-tag" contenteditable="false">
+				<span class="tag-body">
+					<span class="tag-label">genetics</span>
+					<span class="tag-close"></span>
+				</span>
+				<span class="tag-count">90<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">genetics</span> used 90 times<br>(click to see where)</span></span>
+			</span>
+
+			<span class="tag domain-tag" contenteditable="false">
+				<span class="tag-body">
+					<span class="tag-label">social trends</span>
+					<span class="tag-close"></span>
+				</span>
+				<span class="tag-count">130<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">social trends</span> used 130 times<br>(click to see where)</span></span>
+			</span>
+
+			<span class="tag domain-tag" contenteditable="false">
+				<span class="tag-body">
+					<span class="tag-label">IoT</span>
+					<span class="tag-close"></span>
+					<span class="tag-body-tooltip">
+							<span class="tag-body-tooltip-title">IoT</span>
+							<span class="tag-body-tooltip-subtitle">Internet of Things</span>
+					</span>
+				</span>
+				<span class="tag-count">56<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">IoT</span> used 56 times<br>(click to see where)</span></span>
+			</span>
+
+			<span class="tag domain-tag" contenteditable="false">
+				<span class="tag-body">
+					<span class="tag-label">robotics</span>
+					<span class="tag-close"></span>
+				</span>
+				<span class="tag-count">50<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">robotics</span> used 50 times<br>(click to see where)</span></span>
+			</span>
+
+			<span class="tag domain-tag" contenteditable="false">
+				<span class="tag-body">
+					<span class="tag-label">alternative energy sources</span>
+					<span class="tag-close"></span>
+				</span>
+				<span class="tag-count">178<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">alternative energy sources</span> used 178 times<br>(click to see where)</span></span>
+			</span>
+
+			<span class="tag domain-tag" contenteditable="false">
+				<span class="tag-body">
+					<span class="tag-label">cybersecurity</span>
+					<span class="tag-close"></span>
+				</span>
+				<span class="tag-count">20<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">cybersecurity</span> used 20 times<br>(click to see where)</span></span>
+			</span>
+
+			<span class="tag domain-tag" contenteditable="false">
+				<span class="tag-body">
+					<span class="tag-label">finance</span>
+					<span class="tag-close"></span>
+				</span>
+				<span class="tag-count">90<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">finance</span> used 90 times<br>(click to see where)</span></span>
+			</span>
+
+			<span class="tag domain-tag" contenteditable="false">
+				<span class="tag-body">
+					<span class="tag-label">water resources</span>
+					<span class="tag-close"></span>
+				</span>
+				<span class="tag-count">86<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">water resources</span> used 86 times<br>(click to see where)</span></span>
+			</span>
+
+			<span class="tag domain-tag" contenteditable="false">
+				<span class="tag-body">
+					<span class="tag-label">energy</span>
+					<span class="tag-close"></span>
+				</span>
+				<span class="tag-count">175<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">energy</span> used 175 times<br>(click to see where)</span></span>
+			</span>
+
+			<span class="tag domain-tag" contenteditable="false">
+				<span class="tag-body">
+					<span class="tag-label">health informatics</span>
+					<span class="tag-close"></span>
+				</span>
+				<span class="tag-count">142<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">health informatics</span> used 142 times<br>(click to see where)</span></span>
+			</span>
+
+			<span class="tag domain-tag" contenteditable="false">
+				<span class="tag-body">
+					<span class="tag-label">manufacturing</span>
+					<span class="tag-close"></span>
+				</span>
+				<span class="tag-count">95<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">manufacturing</span> used 95 times<br>(click to see where)</span></span>
+			</span>
+
+			<span class="tag domain-tag" contenteditable="false">
+				<span class="tag-body">
+					<span class="tag-label">autonomous vehicles</span>
+					<span class="tag-close"></span>
+				</span>
+				<span class="tag-count">239<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">autonomous vehicles</span> used 239 times<br>(click to see where)</span></span>
+				<span class="tag-trend">+19<span class="tag-trend-tooltip">19 mentions<br>in the last month</span></span>
+			</span>
+
+			<span class="tag domain-tag" contenteditable="false">
+				<span class="tag-body">
+					<span class="tag-label">smart cities</span>
+					<span class="tag-close"></span>
+				</span>
+				<span class="tag-count">224<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">smart cities</span> used 224 times<br>(click to see where)</span></span>
+			</span>
+
+			<span class="tag domain-tag" contenteditable="false">
+				<span class="tag-body">
+					<span class="tag-label">cultural shifts</span>
+					<span class="tag-close"></span>
+				</span>
+				<span class="tag-count">102<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">cultural shifts</span> used 102 times<br>(click to see where)</span></span>
+			</span>
+
+			<span class="tag domain-tag" contenteditable="false">
+				<span class="tag-body">
+					<span class="tag-label">climate change</span>
+					<span class="tag-close"></span>
+				</span>
+				<span class="tag-count">8<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">climate change</span> used 8 times<br>(click to see where)</span></span>
+			</span>
+
+			<span class="tag domain-tag" contenteditable="false">
+				<span class="tag-body">
+					<span class="tag-label">personalized medicine</span>
+					<span class="tag-close"></span>
+				</span>
+				<span class="tag-count">157<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">personalized medicine</span> used 157 times<br>(click to see where)</span></span>
+			</span>
+
+			<span class="tag domain-tag" contenteditable="false">
+				<span class="tag-body">
+					<span class="tag-label">synthetic biology</span>
+					<span class="tag-close"></span>
+				</span>
+				<span class="tag-count">213<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">synthetic biology</span> used 213 times<br>(click to see where)</span></span>
+			</span>
+
+			<span class="tag domain-tag" contenteditable="false">
+				<span class="tag-body">
+					<span class="tag-label">transportation</span>
+					<span class="tag-close"></span>
+				</span>
+				<span class="tag-count">85<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">transportation</span> used 85 times<br>(click to see where)</span></span>
+			</span>
+
+			<span class="tag domain-tag" contenteditable="false">
+				<span class="tag-body">
+					<span class="tag-label">wearables</span>
+					<span class="tag-close"></span>
+				</span>
+				<span class="tag-count">144<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">wearables</span> used 144 times<br>(click to see where)</span></span>
+			</span>
+
+			<span class="tag domain-tag" contenteditable="false">
+				<span class="tag-body">
+					<span class="tag-label">3d printing</span>
+					<span class="tag-close"></span>
+				</span>
+				<span class="tag-count">59<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">3d printing</span> used 59 times<br>(click to see where)</span></span>
+				<span class="tag-trend">+31<span class="tag-trend-tooltip">31 mentions<br>in the last month</span></span>
+			</span>
+
+			<span class="tag domain-tag" contenteditable="false">
+				<span class="tag-body">
+					<span class="tag-label">materials science</span>
+					<span class="tag-close"></span>
+				</span>
+				<span class="tag-count">97<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">materials science</span> used 97 times<br>(click to see where)</span></span>
+			</span>
+
+			<span class="tag domain-tag" contenteditable="false">
+				<span class="tag-body">
+					<span class="tag-label">quantum computing</span>
+					<span class="tag-close"></span>
+				</span>
+				<span class="tag-count">64<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">quantum computing</span> used 64 times<br>(click to see where)</span></span>
+			</span>
+
+		</section>
+
+
+		<section class="tags-projects">
+
+			<h3>Projects</h3>
+
+			<span class="tag project-tag linked" contenteditable="false">
+				<span class="tag-body">
+					<svg class="tag-picture" width="28" height="28" viewBox="0 0 28 28"><use xlink:href="#project-icon"></use></svg>
+					<span class="tag-label">Green Transportation Solutions Project</span>
+					<span class="tag-close"></span>
+					<span class="tag-body-tooltip">
+							<svg class="tag-body-tooltip-picture" width="42" height="42" viewBox="0 0 28 28"><use xlink:href="#project-icon"></use></svg>
+							<span class="tag-body-tooltip-title">Green Transportation Solutions Project</span>
+							<span class="tag-body-tooltip-subtitle">Aliquam id nisl at!</span>
+					</span>
+				</span>
+				<span class="tag-count">13<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">Green Transportation Solutions Project</span> used 13 times<br>(click to see where)</span></span>
+			</span>
+			
+			<span class="tag project-tag linked" contenteditable="false">
+				<span class="tag-body">
+					<svg class="tag-picture" width="28" height="28" viewBox="0 0 28 28"><use xlink:href="#project-icon"></use></svg>
+					<span class="tag-label">Circular Economy and Resource Management</span>
+					<span class="tag-close"></span>
+					<span class="tag-body-tooltip">
+							<svg class="tag-body-tooltip-picture" width="42" height="42" viewBox="0 0 28 28"><use xlink:href="#project-icon"></use></svg>
+							<span class="tag-body-tooltip-title">Circular Economy and Resource Management</span>
+							<span class="tag-body-tooltip-subtitle">Transitioning to a sustainable and less resource-intensive economy</span>
+					</span>
+				</span>
+				<span class="tag-count">105<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">Circular Economy and Resource Management</span> used 105 times<br>(click to see where)</span></span>
+				<span class="tag-trend">+21<span class="tag-trend-tooltip">21 mentions<br>in the last month</span></span>
+			</span>
+			
+			<span class="tag project-tag linked" contenteditable="false">
+				<span class="tag-body">
+					<svg class="tag-picture" width="28" height="28" viewBox="0 0 28 28"><use xlink:href="#project-icon"></use></svg>
+					<span class="tag-label">Project BlueHarbor 2050</span>
+					<span class="tag-close"></span>
+					<span class="tag-body-tooltip">
+							<svg class="tag-body-tooltip-picture" width="42" height="42" viewBox="0 0 28 28"><use xlink:href="#project-icon"></use></svg>
+							<span class="tag-body-tooltip-title">Project BlueHarbor 2050</span>
+							<span class="tag-body-tooltip-subtitle">Pioneering Innovations in Ocean Conservation and Sustainable Marine Resource Use</span>
+					</span>
+				</span>
+				<span class="tag-count">9<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">Project BlueHarbor 2050</span> used 9 times<br>(click to see where)</span></span>
+			</span>
+			
+			<span class="tag project-tag linked" contenteditable="false">
+				<span class="tag-body">
+					<svg class="tag-picture" width="28" height="28" viewBox="0 0 28 28"><use xlink:href="#project-icon"></use></svg>
+					<span class="tag-label">SkyVista 2045</span>
+					<span class="tag-close"></span>
+					<span class="tag-body-tooltip">
+							<svg class="tag-body-tooltip-picture" width="42" height="42" viewBox="0 0 28 28"><use xlink:href="#project-icon"></use></svg>
+							<span class="tag-body-tooltip-title">SkyVista 2045</span>
+							<span class="tag-body-tooltip-subtitle">A Foresight Journey into Urban Air Mobility and its Integration into Transportation Networks</span>
+					</span>
+				</span>
+				<span class="tag-count">42<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">SkyVista 2045</span> used 42 times<br>(click to see where)</span></span>
+			</span>
+			
+			<span class="tag project-tag linked" contenteditable="false">
+				<span class="tag-body">
+					<svg class="tag-picture" width="28" height="28" viewBox="0 0 28 28"><use xlink:href="#project-icon"></use></svg>
+					<span class="tag-label">Marine Biology Futures Exploration Project</span>
+					<span class="tag-close"></span>
+					<span class="tag-body-tooltip">
+							<svg class="tag-body-tooltip-picture" width="42" height="42" viewBox="0 0 28 28"><use xlink:href="#project-icon"></use></svg>
+							<span class="tag-body-tooltip-title">Marine Biology Futures Exploration Project</span>
+							<span class="tag-body-tooltip-subtitle">Pellentesque iaculis justo quis</span>
+					</span>
+				</span>
+				<span class="tag-count">17<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">Marine Biology Futures Exploration Project</span> used 17 times<br>(click to see where)</span></span>
+			</span>
+			
+			<span class="tag project-tag linked" contenteditable="false">
+				<span class="tag-body">
+					<svg class="tag-picture" width="28" height="28" viewBox="0 0 28 28"><use xlink:href="#project-icon"></use></svg>
+					<span class="tag-label">Global Health and Pandemics</span>
+					<span class="tag-close"></span>
+					<span class="tag-body-tooltip">
+							<svg class="tag-body-tooltip-picture" width="42" height="42" viewBox="0 0 28 28"><use xlink:href="#project-icon"></use></svg>
+							<span class="tag-body-tooltip-title">Global Health and Pandemics</span>
+							<span class="tag-body-tooltip-subtitle">Predicting and managing future pandemics and global health threats</span>
+					</span>
+				</span>
+				<span class="tag-count">5<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">Global Health and Pandemics</span> used 5 times<br>(click to see where)</span></span>
+			</span>
+			
+			<span class="tag project-tag linked" contenteditable="false">
+				<span class="tag-body">
+					<svg class="tag-picture" width="28" height="28" viewBox="0 0 28 28"><use xlink:href="#project-icon"></use></svg>
+					<span class="tag-label">Space Governance and Ethics</span>
+					<span class="tag-close"></span>
+					<span class="tag-body-tooltip">
+							<svg class="tag-body-tooltip-picture" width="42" height="42" viewBox="0 0 28 28"><use xlink:href="#project-icon"></use></svg>
+							<span class="tag-body-tooltip-title">Space Governance and Ethics</span>
+							<span class="tag-body-tooltip-subtitle">Establishing regulations and ethical frameworks for space activities</span>
+					</span>
+				</span>
+				<span class="tag-count">38<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">Space Governance and Ethics</span> used 38 times<br>(click to see where)</span></span>
+			</span>
+			
+			<span class="tag project-tag linked" contenteditable="false">
+				<span class="tag-body">
+					<svg class="tag-picture" width="28" height="28" viewBox="0 0 28 28"><use xlink:href="#project-icon"></use></svg>
+					<span class="tag-label">Manufacturing and Production</span>
+					<span class="tag-close"></span>
+					<span class="tag-body-tooltip">
+							<svg class="tag-body-tooltip-picture" width="42" height="42" viewBox="0 0 28 28"><use xlink:href="#project-icon"></use></svg>
+							<span class="tag-body-tooltip-title">Manufacturing and Production</span>
+							<span class="tag-body-tooltip-subtitle">3D printing, industrial automation, and supply chain resilience</span>
+					</span>
+				</span>
+				<span class="tag-count">19<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">Manufacturing and Production</span> used 19 times<br>(click to see where)</span></span>
+			</span>
+			
+			<span class="tag project-tag linked" contenteditable="false">
+				<span class="tag-body">
+					<svg class="tag-picture" width="28" height="28" viewBox="0 0 28 28"><use xlink:href="#project-icon"></use></svg>
+					<span class="tag-label">Space Exploration and Colonization</span>
+					<span class="tag-close"></span>
+					<span class="tag-body-tooltip">
+							<svg class="tag-body-tooltip-picture" width="42" height="42" viewBox="0 0 28 28"><use xlink:href="#project-icon"></use></svg>
+							<span class="tag-body-tooltip-title">Space Exploration and Colonization</span>
+							<span class="tag-body-tooltip-subtitle">Long-term future of humanity beyond Earth</span>
+					</span>
+				</span>
+				<span class="tag-count">88<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">Space Exploration and Colonization</span> used 88 times<br>(click to see where)</span></span>
+			</span>
+			
+			<span class="tag project-tag linked" contenteditable="false">
+				<span class="tag-body">
+					<svg class="tag-picture" width="28" height="28" viewBox="0 0 28 28"><use xlink:href="#project-icon"></use></svg>
+					<span class="tag-label">Forecast Fusion Initiative</span>
+					<span class="tag-close"></span>
+					<span class="tag-body-tooltip">
+							<svg class="tag-body-tooltip-picture" width="42" height="42" viewBox="0 0 28 28"><use xlink:href="#project-icon"></use></svg>
+							<span class="tag-body-tooltip-title">Forecast Fusion Initiative</span>
+							<span class="tag-body-tooltip-subtitle">Praesent eleifend libero.</span>
+					</span>
+				</span>
+				<span class="tag-count">73<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">Forecast Fusion Initiative</span> used 73 times<br>(click to see where)</span></span>
+				<span class="tag-trend">+8<span class="tag-trend-tooltip">8 mentions<br>in the last month</span></span>
+			</span>
+			
+			<span class="tag project-tag linked" contenteditable="false">
+				<span class="tag-body">
+					<svg class="tag-picture" width="28" height="28" viewBox="0 0 28 28"><use xlink:href="#project-icon"></use></svg>
+					<span class="tag-label">Electric Mobility Integration</span>
+					<span class="tag-close"></span>
+					<span class="tag-body-tooltip">
+							<svg class="tag-body-tooltip-picture" width="42" height="42" viewBox="0 0 28 28"><use xlink:href="#project-icon"></use></svg>
+							<span class="tag-body-tooltip-title">Electric Mobility Integration</span>
+							<span class="tag-body-tooltip-subtitle">Nam quis augue vehicula</span>
+					</span>
+				</span>
+				<span class="tag-count">2<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">Electric Mobility Integration</span> used 2 times<br>(click to see where)</span></span>
+			</span>
+			
+			<span class="tag project-tag linked" contenteditable="false">
+				<span class="tag-body">
+					<svg class="tag-picture" width="28" height="28" viewBox="0 0 28 28"><use xlink:href="#project-icon"></use></svg>
+					<span class="tag-label">SustainaCity 2030</span>
+					<span class="tag-close"></span>
+					<span class="tag-body-tooltip">
+							<svg class="tag-body-tooltip-picture" width="42" height="42" viewBox="0 0 28 28"><use xlink:href="#project-icon"></use></svg>
+							<span class="tag-body-tooltip-title">SustainaCity 2030</span>
+							<span class="tag-body-tooltip-subtitle">A Circular Economy Vision for Future-Proof Urban Resource Management</span>
+					</span>
+				</span>
+				<span class="tag-count">67<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">SustainaCity 2030</span> used 67 times<br>(click to see where)</span></span>
+			</span>
+			
+			<span class="tag project-tag linked" contenteditable="false">
+				<span class="tag-body">
+					<svg class="tag-picture" width="28" height="28" viewBox="0 0 28 28"><use xlink:href="#project-icon"></use></svg>
+					<span class="tag-label">Foresight Studies for Sustainable Transportation</span>
+					<span class="tag-close"></span>
+					<span class="tag-body-tooltip">
+							<svg class="tag-body-tooltip-picture" width="42" height="42" viewBox="0 0 28 28"><use xlink:href="#project-icon"></use></svg>
+							<span class="tag-body-tooltip-title">Foresight Studies for Sustainable Transportation</span>
+							<span class="tag-body-tooltip-subtitle">Proin convallis turpis non</span>
+					</span>
+				</span>
+				<span class="tag-count">13<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">Foresight Studies for Sustainable Transportation</span> used 13 times<br>(click to see where)</span></span>
+			</span>
+			
+			<span class="tag project-tag linked" contenteditable="false">
+				<span class="tag-body">
+					<svg class="tag-picture" width="28" height="28" viewBox="0 0 28 28"><use xlink:href="#project-icon"></use></svg>
+					<span class="tag-label">Oceanic Conservation</span>
+					<span class="tag-close"></span>
+					<span class="tag-body-tooltip">
+							<svg class="tag-body-tooltip-picture" width="42" height="42" viewBox="0 0 28 28"><use xlink:href="#project-icon"></use></svg>
+							<span class="tag-body-tooltip-title">Oceanic Conservation</span>
+							<span class="tag-body-tooltip-subtitle">Proin aliquam ante id</span>
+					</span>
+				</span>
+				<span class="tag-count">18<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">Oceanic Conservation</span> used 18 times<br>(click to see where)</span></span>
+			</span>
+			
+			<span class="tag project-tag linked" contenteditable="false">
+				<span class="tag-body">
+					<svg class="tag-picture" width="28" height="28" viewBox="0 0 28 28"><use xlink:href="#project-icon"></use></svg>
+					<span class="tag-label">Eco-Friendly Transportation Solutions Project</span>
+					<span class="tag-close"></span>
+					<span class="tag-body-tooltip">
+							<svg class="tag-body-tooltip-picture" width="42" height="42" viewBox="0 0 28 28"><use xlink:href="#project-icon"></use></svg>
+							<span class="tag-body-tooltip-title">Eco-Friendly Transportation Solutions Project</span>
+							<span class="tag-body-tooltip-subtitle">Sed auctor nisl efficitur!</span>
+					</span>
+				</span>
+				<span class="tag-count">49<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">Eco-Friendly Transportation Solutions Project</span> used 49 times<br>(click to see where)</span></span>
+			</span>
+			
+			<span class="tag project-tag linked" contenteditable="false">
+				<span class="tag-body">
+					<svg class="tag-picture" width="28" height="28" viewBox="0 0 28 28"><use xlink:href="#project-icon"></use></svg>
+					<span class="tag-label">Global Foresight in Distributed Ledger Systems</span>
+					<span class="tag-close"></span>
+					<span class="tag-body-tooltip">
+							<svg class="tag-body-tooltip-picture" width="42" height="42" viewBox="0 0 28 28"><use xlink:href="#project-icon"></use></svg>
+							<span class="tag-body-tooltip-title">Global Foresight in Distributed Ledger Systems</span>
+							<span class="tag-body-tooltip-subtitle">Pellentesque feugiat nibh.</span>
+					</span>
+				</span>
+				<span class="tag-count">28<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">Global Foresight in Distributed Ledger Systems</span> used 28 times<br>(click to see where)</span></span>
+			</span>
+			
+			<span class="tag project-tag linked" contenteditable="false">
+				<span class="tag-body">
+					<svg class="tag-picture" width="28" height="28" viewBox="0 0 28 28"><use xlink:href="#project-icon"></use></svg>
+					<span class="tag-label">Expeditionary Ventures in Electric Vehicle Foresight</span>
+					<span class="tag-close"></span>
+					<span class="tag-body-tooltip">
+							<svg class="tag-body-tooltip-picture" width="42" height="42" viewBox="0 0 28 28"><use xlink:href="#project-icon"></use></svg>
+							<span class="tag-body-tooltip-title">Expeditionary Ventures in Electric Vehicle Foresight</span>
+							<span class="tag-body-tooltip-subtitle">Quisque in est!</span>
+					</span>
+				</span>
+				<span class="tag-count">12<span class="tag-count-tooltip"><span class="tag-count-tooltip-label">Expeditionary Ventures in Electric Vehicle Foresight</span> used 12 times<br>(click to see where)</span></span>
+			</span>
+
+		</section>	
+
+	</div>
+	
+</div>
+
+</body>
+</html>
